@@ -2,7 +2,7 @@
 
 import type { EChartsOption } from "echarts";
 import Chart from "../Chart";
-import type { ConversionPoint } from "../lib/metrics/types";
+import type { ConversionPoint } from "../../lib/metrics/types";
 
 /** 模板 6 图表：日转化率折线 + 健康区间 5–12% 绿色参考带。 */
 export default function ConversionChart({ points }: { points: ConversionPoint[] }) {

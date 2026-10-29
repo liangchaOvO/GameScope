@@ -2,7 +2,7 @@
 
 import type { EChartsOption } from "echarts";
 import Chart from "../Chart";
-import type { WeekBar } from "../lib/metrics/types";
+import type { WeekBar } from "../../lib/metrics/types";
 
 /** 模板 1 图表：周净增柱状（脉冲周橙色高亮）+ 愿望单总量趋势线。 */
 export default function WeeklyNetChart({ weeks }: { weeks: WeekBar[] }) {

@@ -2,7 +2,7 @@
 
 import type { EChartsOption } from "echarts";
 import Chart from "../Chart";
-import type { RefundWeekPoint } from "../lib/metrics/types";
+import type { RefundWeekPoint } from "../../lib/metrics/types";
 
 /** 模板 7 图表：周退款率折线 + 10% 关注线 / 15% 警示线。 */
 export default function RefundChart({ points }: { points: RefundWeekPoint[] }) {
