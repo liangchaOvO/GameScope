@@ -18,8 +18,8 @@ import { computeReviewSalesEstimate } from "./reviewSalesEstimate";
 import { computeReviewScoreTier } from "./reviewScoreTier";
 import { computeTrafficSourceStructure } from "./trafficSourceStructure";
 import { computeRegionalSalesStructure } from "./regionalSalesStructure";
-import type { MetricResult } from "./types";
 import { aggregateTrafficDaily } from "./aggregate";
+import type { MetricId, MetricResult } from "./types";
 
 export interface MetricInputs {
   wishlist: { rows: WishDayRow[]; meta: DatasetMeta } | null;
@@ -34,46 +34,86 @@ function src(meta: DatasetMeta | undefined) {
   return { filename: meta.filename, warnings: meta.warnings };
 }
 
+function emptySnapshots(): StoredSnapshots {
+  return { reviews: null, price: null, fetchedAt: null };
+}
+
+/**
+ * 指标注册表：模板看板与 AI 问数共用同一组计算函数（D4 同源同构）。
+ * 新增模板 = 在此注册 + lib/metrics 下新增纯函数 + 单测。
+ */
+export const METRIC_REGISTRY: { id: MetricId; compute: (inputs: MetricInputs) => MetricResult }[] = [
+  {
+    id: "wishlist-accumulation",
+    compute: (i) => computeWishlistAccumulation(i.wishlist?.rows ?? [], src(i.wishlist?.meta)),
+  },
+  {
+    id: "wishlist-deletion-rate",
+    compute: (i) => computeWishlistDeletionRate(i.wishlist?.rows ?? [], src(i.wishlist?.meta)),
+  },
+  {
+    id: "wishlist-visit-conversion",
+    compute: (i) =>
+      computeWishlistVisitConversion(
+        i.wishlist?.rows ?? [],
+        aggregateTrafficDaily(i.traffic?.rows ?? []),
+        src(i.wishlist?.meta),
+        src(i.traffic?.meta)
+      ),
+  },
+  {
+    id: "wishlist-launch-conversion",
+    compute: (i) =>
+      computeWishlistLaunchConversion(
+        i.wishlist?.rows ?? [],
+        i.sales?.rows ?? [],
+        src(i.wishlist?.meta),
+        src(i.sales?.meta)
+      ),
+  },
+  {
+    id: "first-week-share",
+    compute: (i) => computeFirstWeekShare(i.sales?.rows ?? [], src(i.sales?.meta)),
+  },
+  {
+    id: "page-conversion",
+    compute: (i) => computePageConversion(aggregateTrafficDaily(i.traffic?.rows ?? []), src(i.traffic?.meta)),
+  },
+  {
+    id: "refund-rate",
+    compute: (i) => computeRefundRate(i.sales?.rows ?? [], src(i.sales?.meta)),
+  },
+  {
+    id: "discount-pulse-coefficient",
+    compute: (i) =>
+      computeDiscountPulseCoefficient(
+        i.wishlist?.rows ?? [],
+        i.sales?.rows ?? [],
+        src(i.wishlist?.meta),
+        src(i.sales?.meta)
+      ),
+  },
+  {
+    id: "review-sales-estimate",
+    compute: (i) => computeReviewSalesEstimate(i.snapshots ?? emptySnapshots(), { filename: "Steam 评价/价格快照", warnings: [] }),
+  },
+  {
+    id: "review-score-tier",
+    compute: (i) => computeReviewScoreTier(i.snapshots ?? emptySnapshots(), { filename: "Steam 评价/价格快照", warnings: [] }),
+  },
+  {
+    id: "traffic-source-structure",
+    compute: (i) => computeTrafficSourceStructure(i.traffic?.rows ?? [], src(i.traffic?.meta)),
+  },
+  {
+    id: "regional-sales-structure",
+    compute: (i) => computeRegionalSalesStructure(i.regional?.rows ?? [], src(i.regional?.meta)),
+  },
+];
+
 /** Compute all 12 registered metric templates from stored project data. */
 export function computeAllMetrics(inputs: MetricInputs): MetricResult[] {
-  const trafficDaily = inputs.traffic ? aggregateTrafficDaily(inputs.traffic.rows) : [];
-  const wishSrc = src(inputs.wishlist?.meta);
-  const trafficSrc = src(inputs.traffic?.meta);
-  const salesSrc = src(inputs.sales?.meta);
-  const regionalSrc = src(inputs.regional?.meta);
-  const snapshots = inputs.snapshots ?? { reviews: null, price: null, fetchedAt: null };
-  const snapshotSrc = { filename: "Steam 评价/价格快照", warnings: [] };
-
-  return [
-    // 发售前 · 愿望单健康
-    computeWishlistAccumulation(inputs.wishlist?.rows ?? [], wishSrc),
-    computeWishlistDeletionRate(inputs.wishlist?.rows ?? [], wishSrc),
-    computeWishlistVisitConversion(
-      inputs.wishlist?.rows ?? [],
-      trafficDaily,
-      wishSrc,
-      trafficSrc
-    ),
-    // 发售期 · 首周表现
-    computeWishlistLaunchConversion(
-      inputs.wishlist?.rows ?? [],
-      inputs.sales?.rows ?? [],
-      wishSrc,
-      salesSrc
-    ),
-    computeFirstWeekShare(inputs.sales?.rows ?? [], salesSrc),
-    computePageConversion(trafficDaily, trafficSrc),
-    computeRefundRate(inputs.sales?.rows ?? [], salesSrc),
-    // 长线运营
-    computeDiscountPulseCoefficient(
-      inputs.wishlist?.rows ?? [],
-      inputs.sales?.rows ?? [],
-      wishSrc,
-      salesSrc
-    ),
-    computeReviewSalesEstimate(snapshots, snapshotSrc),
-    computeReviewScoreTier(snapshots, snapshotSrc),
-    computeTrafficSourceStructure(inputs.traffic?.rows ?? [], trafficSrc),
-    computeRegionalSalesStructure(inputs.regional?.rows ?? [], regionalSrc),
-  ];
+  return METRIC_REGISTRY.map((e) => e.compute(inputs));
 }
+
+export { aggregateTrafficDaily };
