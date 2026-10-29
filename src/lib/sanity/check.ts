@@ -62,6 +62,8 @@ export function checkWishlist(rows: WishDayRow[]): SanityWarning[] {
   const out = checkDailyCoverage(rows.length, rows.map((r) => r.date));
   const addWarn = nullRatioWarn("新增", rows.map((r) => r.adds), rows.length);
   if (addWarn) out.push(addWarn);
+  const delWarn = nullRatioWarn("删单", rows.map((r) => r.deletes), rows.length);
+  if (delWarn) out.push(delWarn);
 
   // cumulative consistency: total[i] == total[i-1] + net[i]
   let mismatches = 0;

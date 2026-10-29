@@ -10,6 +10,8 @@ export interface MapTrafficResult {
   rows: TrafficSourceRow[];
   skipped: SkippedRow[];
   duplicateKeys: number;
+  /** 访问/购买为空的单元格数（按 0 参与计算，需警告） */
+  emptyNumberCells: number;
 }
 
 export function resolveTrafficHeaders(headers: string[]): HeaderMap {
@@ -20,6 +22,7 @@ export function mapTraffic(table: ParsedTable, map: HeaderMap): MapTrafficResult
   const rows: TrafficSourceRow[] = [];
   const skipped: SkippedRow[] = [];
   const keys = new Set<string>();
+  let emptyNumberCells = 0;
 
   const hasSource = (map["source"] ?? -1) >= 0;
 
@@ -53,6 +56,9 @@ export function mapTraffic(table: ParsedTable, map: HeaderMap): MapTrafficResult
       continue;
     }
 
+    if (visitsRaw === "") emptyNumberCells++;
+    if (unitsRaw === "") emptyNumberCells++;
+
     const source = hasSource ? cellAt(row, map, "source") || "未知来源" : "全部来源";
 
     rows.push({
@@ -82,5 +88,5 @@ export function mapTraffic(table: ParsedTable, map: HeaderMap): MapTrafficResult
     a.date < b.date ? -1 : a.date > b.date ? 1 : a.source < b.source ? -1 : 1
   );
 
-  return { rows: unique, skipped, duplicateKeys };
+  return { rows: unique, skipped, duplicateKeys, emptyNumberCells };
 }

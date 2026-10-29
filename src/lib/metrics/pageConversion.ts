@@ -34,7 +34,7 @@ export function computePageConversion(
     teaching: {
       what: "看到商店页的人里，多少人下单。",
       why: "购买÷访问，与 Steam 后台同口径，按日加总再算。",
-      range: "5–12%（经验值）；低于 5% 多为流量不精准或页面弱。",
+      range: "5–12%（经验值，非官方标准）；低于 5% 多为流量不精准或页面弱。",
       next: "问「流量来源结构」「哪个来源转化最高」。",
     },
     chartData: { kind: "conversion" as const, points: [] },

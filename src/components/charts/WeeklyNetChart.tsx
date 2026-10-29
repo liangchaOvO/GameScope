@@ -48,6 +48,7 @@ export default function WeeklyNetChart({ weeks }: { weeks: WeekBar[] }) {
         yAxisIndex: 1,
         smooth: true,
         showSymbol: false,
+        data: weeks.map((w) => w.totalEnd),
         itemStyle: { color: "#94a3b8" },
         lineStyle: { color: "#94a3b8", width: 1.5 },
         connectNulls: true,

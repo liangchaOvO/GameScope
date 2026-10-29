@@ -102,6 +102,23 @@ describe("愿望单映射与可读报错", () => {
     expect(res.skipped[0].message).toContain("2026-13-40");
   });
 
+  it("空行不打乱物理行号", () => {
+    const csv = "Date,Wishlist Adds,Wishlist Deletes\n\n2026-01-01,10,2\n2026-01-02,12x,1";
+    const t = parseCsv(csv);
+    const res = mapWishlist(t, resolveWishlistHeaders(t.headers));
+    expect(res.rows).toHaveLength(1);
+    expect(res.skipped[0].rowNo).toBe(4); // 物理行号（含空行）
+  });
+
+  it("一行多列坏值一次报全", () => {
+    const csv = "Date,Wishlist Adds,Wishlist Deletes\n2026-01-01,12x,3y";
+    const t = parseCsv(csv);
+    const res = mapWishlist(t, resolveWishlistHeaders(t.headers));
+    expect(res.rows).toHaveLength(0);
+    expect(res.skipped[0].message).toContain("「新增愿望单」列的值「12x」");
+    expect(res.skipped[0].message).toContain("「删除愿望单」列的值「3y」");
+  });
+
   it("重复日期被合并并记录", () => {
     const csv = "Date,Wishlist Adds,Wishlist Deletes\n2026-01-01,10,2\n2026-01-01,7,1";
     const t = parseCsv(csv);
@@ -135,6 +152,14 @@ describe("流量映射", () => {
     expect(res.rows).toHaveLength(2);
     // 聚合后按日期+来源排序（字母序）
     expect(res.rows.map((r) => r.source)).toEqual(["External", "Search"]);
+  });
+
+  it("空访问/购买单元格计数并按 0 参与计算", () => {
+    const csv = "Date,Visits,Units\n2026-01-01,,3\n2026-01-02,100,";
+    const t = parseCsv(csv);
+    const res = mapTraffic(t, resolveTrafficHeaders(t.headers));
+    expect(res.emptyNumberCells).toBe(2);
+    expect(res.rows[0].visits).toBe(0);
   });
 });
 

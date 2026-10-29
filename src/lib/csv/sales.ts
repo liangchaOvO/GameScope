@@ -9,6 +9,8 @@ import { SALES_SPECS } from "./specs";
 export interface MapSalesResult {
   rows: SalesDayRow[];
   skipped: SkippedRow[];
+  /** 「销量」为空的单元格数（按 0 参与计算，需警告） */
+  emptyNumberCells: number;
 }
 
 export function resolveSalesHeaders(headers: string[]): HeaderMap {
@@ -26,6 +28,7 @@ export function resolveSalesHeaders(headers: string[]): HeaderMap {
 export function mapSales(table: ParsedTable, map: HeaderMap): MapSalesResult {
   const skipped: SkippedRow[] = [];
   const byDate = new Map<string, { gross: number; refunds: number }>();
+  let emptyNumberCells = 0;
 
   const hasRefundCol = (map["refunds"] ?? -1) >= 0;
   const hasTypeCol = (map["type"] ?? -1) >= 0;
@@ -51,6 +54,7 @@ export function mapSales(table: ParsedTable, map: HeaderMap): MapSalesResult {
       continue;
     }
     const unitsVal = units.value ?? 0;
+    if (unitsRaw === "") emptyNumberCells++;
 
     let gross = 0;
     let refunds = 0;
@@ -92,5 +96,5 @@ export function mapSales(table: ParsedTable, map: HeaderMap): MapSalesResult {
     }))
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 
-  return { rows, skipped };
+  return { rows, skipped, emptyNumberCells };
 }

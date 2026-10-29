@@ -6,14 +6,14 @@ import { mapWishlist, resolveWishlistHeaders } from "./wishlist";
 import { mapTraffic, resolveTrafficHeaders } from "./traffic";
 import { mapSales, resolveSalesHeaders } from "./sales";
 import { checkSales, checkTraffic, checkWishlist } from "../sanity/check";
+import { aggregateTrafficDaily } from "../metrics/index";
 import {
   replaceSales,
   replaceTraffic,
   replaceWishlist,
 } from "../db/store";
-import { KIND_LABELS, type DatasetKind, type SanityWarning } from "../types";
+import { KIND_LABELS, type SanityWarning } from "../types";
 import type { FileUploadResult } from "../api-types";
-import type { TrafficDayRow } from "../types";
 
 /**
  * Ingest one uploaded file: decode → parse → detect kind → map → validate →
@@ -98,7 +98,7 @@ export function ingestBuffer(filename: string, buf: Buffer): FileUploadResult {
       return missingColumns(filename, missing, table.headers);
     }
     const map = resolveTrafficHeaders(table.headers);
-    const { rows, skipped, duplicateKeys } = mapTraffic(table, map);
+    const { rows, skipped, duplicateKeys, emptyNumberCells } = mapTraffic(table, map);
     if (rows.length === 0) {
       return allRowsFailed(filename, skipped);
     }
@@ -110,8 +110,15 @@ export function ingestBuffer(filename: string, buf: Buffer): FileUploadResult {
         message: `存在 ${duplicateKeys} 行「日期×来源」重复，已按访问/购买求和合并。`,
       });
     }
+    if (emptyNumberCells > 0) {
+      warnings.push({
+        level: "warn",
+        code: "empty-number-cells",
+        message: `有 ${emptyNumberCells} 个「访问/购买」空值，已按 0 参与计算（空访问会使转化率虚高）。`,
+      });
+    }
     // sanity runs on daily aggregates
-    const daily = aggregateDaily(rows);
+    const daily = aggregateTrafficDaily(rows);
     warnings.push(...checkTraffic(daily));
     const meta = replaceTraffic(filename, rows, warnings);
     return {
@@ -132,11 +139,18 @@ export function ingestBuffer(filename: string, buf: Buffer): FileUploadResult {
     return missingColumns(filename, missing, table.headers);
   }
   const map = resolveSalesHeaders(table.headers);
-  const { rows, skipped } = mapSales(table, map);
+  const { rows, skipped, emptyNumberCells } = mapSales(table, map);
   if (rows.length === 0) {
     return allRowsFailed(filename, skipped);
   }
   const warnings = checkSales(rows);
+  if (emptyNumberCells > 0) {
+    warnings.push({
+      level: "warn",
+      code: "empty-number-cells",
+      message: `有 ${emptyNumberCells} 个「销量」空值，已按 0 参与计算。`,
+    });
+  }
   const meta = replaceSales(filename, rows, warnings);
   return {
     filename,
@@ -177,15 +191,4 @@ function allRowsFailed(
       `所有数据行都无法解析（共 ${skipped.length} 处错误）。` +
       `首个错误：第 ${first?.rowNo} 行：${first?.message ?? "未知错误"}。`,
   };
-}
-
-function aggregateDaily(rows: { date: string; visits: number; units: number }[]): TrafficDayRow[] {
-  const map = new Map<string, TrafficDayRow>();
-  for (const r of rows) {
-    const cur = map.get(r.date) ?? { date: r.date, visits: 0, units: 0 };
-    cur.visits += r.visits;
-    cur.units += r.units;
-    map.set(r.date, cur);
-  }
-  return [...map.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
 }

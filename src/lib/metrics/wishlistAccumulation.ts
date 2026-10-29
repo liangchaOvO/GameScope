@@ -69,7 +69,7 @@ export function computeWishlistAccumulation(
     teaching: {
       what: "每周愿望单净增多少，涨势是否健康。",
       why: "净增=新增−删单−购买/礼物移除，只看新增会高估。",
-      range: "无固定标准；发售前持续为正、稳步抬升较健康（经验值）。",
+      range: "无固定标准；发售前持续为正、稳步抬升较健康（经验值，非官方标准）。",
       next: "问「脉冲周贡献了多少」「删单率是否超 8%」。",
     },
     chartData: { kind: "weekly-net", weeks: [] },
@@ -148,7 +148,7 @@ export function computeWishlistAccumulation(
     teaching: {
       what: "每周愿望单净增多少，涨势是否健康。",
       why: "净增=新增−删单−购买/礼物移除，只看新增会高估。",
-      range: "无固定标准；发售前持续为正、稳步抬升较健康（经验值）。",
+      range: "无固定标准；发售前持续为正、稳步抬升较健康（经验值，非官方标准）。",
       next: "问「脉冲周贡献了多少」「删单率是否超 8%」。",
     },
     chartData: { kind: "weekly-net", weeks },

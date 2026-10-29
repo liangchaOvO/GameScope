@@ -48,7 +48,7 @@ export function mapWishlist(table: ParsedTable, map: HeaderMap): MapWishlistResu
       continue;
     }
 
-    const cells = [
+    const evaluated = [
       numCell(row, map, "adds", "新增愿望单"),
       numCell(row, map, "deletes", "删除愿望单"),
       numCell(row, map, "purchases", "购买移除"),
@@ -56,12 +56,16 @@ export function mapWishlist(table: ParsedTable, map: HeaderMap): MapWishlistResu
       numCell(row, map, "net", "净变化"),
       numCell(row, map, "total", "愿望单总量"),
     ];
-    const bad = cells.find((r) => !r.ok);
-    if (bad && !bad.ok) {
-      skipped.push({ rowNo: row.rowNo, message: bad.message });
+    // 一行内所有坏列一次报全，避免用户反复上传才能发现
+    const failures = evaluated.filter((r) => !r.ok) as { ok: false; message: string }[];
+    if (failures.length > 0) {
+      skipped.push({
+        rowNo: row.rowNo,
+        message: failures.map((f) => f.message).join("；"),
+      });
       continue;
     }
-    const [adds, deletes, purchases, gifts, net, total] = cells as {
+    const [adds, deletes, purchases, gifts, net, total] = evaluated as {
       ok: true;
       value: number | null;
     }[];
