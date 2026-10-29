@@ -10,11 +10,13 @@ export default function MetricCard({
   metric: MetricResult;
   chart: ReactNode;
 }) {
+  const unavailable =
+    metric.status === "unavailable" || metric.status === "insufficient";
   return (
     <article className="space-y-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">{metric.name}</h2>
+          <h3 className="text-lg font-semibold">{metric.name}</h3>
           <p className="text-sm text-gray-500">{metric.subtitle}</p>
         </div>
         <StatusChip status={metric.status} label={metric.statusLabel} />
@@ -37,7 +39,7 @@ export default function MetricCard({
         </p>
       )}
 
-      {chart}
+      {unavailable && metric.confidenceNote ? null : chart}
 
       <CaliberPanel caliber={metric.caliber} />
       <TeachingCard teaching={metric.teaching} />

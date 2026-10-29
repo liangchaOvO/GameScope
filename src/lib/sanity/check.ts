@@ -1,4 +1,5 @@
 import type {
+  RegionalRow,
   SanityWarning,
   SalesDayRow,
   TrafficDayRow,
@@ -94,4 +95,20 @@ export function checkTraffic(rows: TrafficDayRow[]): SanityWarning[] {
 
 export function checkSales(rows: SalesDayRow[]): SanityWarning[] {
   return checkDailyCoverage(rows.length, rows.map((r) => r.date));
+}
+
+export function checkRegional(rows: RegionalRow[]): SanityWarning[] {
+  const out: SanityWarning[] = [];
+  const dates = [...new Set(rows.map((r) => r.date))];
+  out.push(...checkDailyCoverage(dates.length, dates));
+  // 国家覆盖度：未知地区占比过高时提示
+  const unknown = rows.filter((r) => r.country === "未知地区").length;
+  if (rows.length > 0 && unknown / rows.length > 0.2) {
+    out.push({
+      level: "warn",
+      code: "unknown-country",
+      message: `${unknown}/${rows.length} 行「国家/地区」为空，已归入「未知地区」，地区结构可能失真。`,
+    });
+  }
+  return out;
 }

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
 import {
+  getAppSnapshots,
   getDatasets,
+  getRegionalRows,
   getSalesRows,
-  getTrafficDaily,
+  getTrafficSourceRows,
   getWishlistRows,
 } from "@/lib/db/store";
 import { computeAllMetrics } from "@/lib/metrics";
@@ -12,29 +15,42 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const datasets = getDatasets();
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "未登录。" }, { status: 401 });
+
+  const { project } = session;
+  const datasets = getDatasets(project.id);
   const byKind = new Map(datasets.map((d) => [d.kind, d]));
 
-  const wishlistRows = byKind.has("wishlist") ? getWishlistRows() : [];
-  const trafficRows = byKind.has("traffic") ? getTrafficDaily() : [];
-  const salesRows = byKind.has("sales") ? getSalesRows() : [];
-
   const metrics = computeAllMetrics({
-    wishlist: byKind.has("wishlist")
-      ? { rows: wishlistRows, meta: byKind.get("wishlist")! }
-      : null,
-    traffic: byKind.has("traffic")
-      ? { rows: trafficRows, meta: byKind.get("traffic")! }
-      : null,
-    sales: byKind.has("sales")
-      ? { rows: salesRows, meta: byKind.get("sales")! }
-      : null,
+    wishlist:
+      byKind.has("wishlist")
+        ? { rows: getWishlistRows(project.id), meta: byKind.get("wishlist")! }
+        : null,
+    traffic:
+      byKind.has("traffic")
+        ? { rows: getTrafficSourceRows(project.id), meta: byKind.get("traffic")! }
+        : null,
+    sales:
+      byKind.has("sales")
+        ? { rows: getSalesRows(project.id), meta: byKind.get("sales")! }
+        : null,
+    regional:
+      byKind.has("regional")
+        ? { rows: getRegionalRows(project.id), meta: byKind.get("regional")! }
+        : null,
+    snapshots: getAppSnapshots(project.id),
   });
 
-  const dto: OverviewDTO = {
+  const dto: OverviewDTO & {
+    user: { email: string };
+    project: { id: number; name: string; appId: number | null };
+  } = {
     datasets,
     metrics,
     hasData: datasets.length > 0,
+    user: session.user,
+    project: { id: project.id, name: project.name, appId: project.appId },
   };
   return NextResponse.json(dto);
 }

@@ -70,6 +70,15 @@ const WISHLIST_HEADERS = [
 const TRAFFIC_HEADERS = ["Date", "Traffic Source", "Visits", "Units"];
 const SALES_HEADERS = ["Date", "Units", "Refunds"];
 
+const DISCOUNT = ["2026-10-08", "2026-10-15"]; // 发售后折扣（脉冲，供模板 8）
+
+// 地区权重（地区销售报告，模板 12）
+const REGION_WEIGHTS = [
+  ["CN", 0.24], ["US", 0.2], ["RU", 0.09], ["DE", 0.07], ["BR", 0.06],
+  ["JP", 0.05], ["KR", 0.04], ["GB", 0.04], ["FR", 0.04], ["CA", 0.03],
+  ["PL", 0.03], ["ES", 0.03], ["ROW", 0.12],
+];
+
 // ---------- simulation ----------
 const wishlist = [];
 const traffic = [];
@@ -105,6 +114,11 @@ for (const d of days) {
       );
       refundRate = 0.085;
     }
+    if (d >= DISCOUNT[0] && d <= DISCOUNT[1]) {
+      // 折扣期：销量 ×2.2，退款率 +1pp
+      gross = Math.round(gross * 2.2 * noise(0.1));
+      refundRate += 0.01;
+    }
   }
   const refunds = Math.round(gross * refundRate * noise(0.1));
   sales.push({ date: d, gross, refunds });
@@ -128,6 +142,7 @@ for (const d of days) {
       visits = Math.round(
         Math.max(950, 2200 - (ds - 14) * 22) * (weekend ? 1.18 : 1) * noise(0.12)
       );
+    if (d >= DISCOUNT[0] && d <= DISCOUNT[1]) visits = Math.round(visits * 1.8 * noise(0.08));
   }
   const eventish =
     inRange(d, FESTIVAL) || inRange(d, PRELAUNCH) || (d >= LAUNCH && diffDays(LAUNCH, d) <= 6);
@@ -165,14 +180,15 @@ for (const d of days) {
       adds = Math.round(
         Math.max(42, 150 - (ds - 7) * 2.0) * (weekend ? 1.1 : 1) * noise(0.15)
       );
+    if (d >= DISCOUNT[0] && d <= DISCOUNT[1]) adds = Math.round(adds * 6 * noise(0.12));
   } else {
     const t = diffDays(START, d) / diffDays(START, LAUNCH);
     adds = Math.round((32 + 14 * t) * (weekend ? 1.12 : 1) * noise(0.18));
   }
   const deletes =
     d > LAUNCH
-      ? Math.round(Math.max(1, adds * 0.06 + total * 0.0035))
-      : Math.round(Math.max(1, adds * 0.045 + total * 0.0015));
+      ? Math.round(Math.max(1, adds * 0.06 + total * 0.0008))
+      : Math.round(Math.max(1, adds * 0.04 + total * 0.0004));
   const purchases = Math.min(Math.round(gross * 0.34), Math.floor(total * 0.05));
   const gifts = Math.max(0, Math.round(adds * 0.008));
   const net = adds - deletes - purchases - gifts;
@@ -213,6 +229,33 @@ fs.writeFileSync(
     SALES_HEADERS,
     sales.map((r) => [r.date, r.gross, r.refunds])
   ),
+  "utf8"
+);
+
+// 地区销售报告：逐日×国家，最大余额法保证与当日毛销量一致
+const REGIONAL_HEADERS = ["Date", "Country", "Units", "Refunds"];
+const regionalRows = [];
+for (const s of sales) {
+  if (s.gross <= 0 && s.refunds <= 0) continue;
+  const raw = REGION_WEIGHTS.map(([c, w]) => [c, s.gross * w]);
+  const floored = raw.map(([c, v]) => [c, Math.floor(v)]);
+  let remainder = s.gross - floored.reduce((a, r) => a + r[1], 0);
+  const order = [...raw]
+    .sort((a, b) => (b[1] - Math.floor(b[1])) - (a[1] - Math.floor(a[1])))
+    .map((r) => r[0]);
+  for (const c of order) {
+    if (remainder <= 0) break;
+    const row = floored.find((r) => r[0] === c);
+    row[1] += 1;
+    remainder--;
+  }
+  for (const [c, u] of floored) {
+    regionalRows.push([s.date, c, u, Math.round(s.refunds * (u / Math.max(1, s.gross)))]);
+  }
+}
+fs.writeFileSync(
+  path.join(fixturesDir, "regional-report.csv"),
+  toCsv(REGIONAL_HEADERS, regionalRows),
   "utf8"
 );
 
@@ -301,4 +344,7 @@ console.log(`愿望单: 期末总量 ${total}，期间新增 Σ${wishlist.reduce
 console.log(`购买开放期: Σ访问 ${postVisits.toLocaleString()}，Σ毛销量 ${postUnits.toLocaleString()}，页面转化率 ${(postUnits / postVisits * 100).toFixed(1)}%`);
 console.log(`退款: Σ退款 ${postRefunds.toLocaleString()} / Σ毛销量 ${postUnits.toLocaleString()} = ${(postRefunds / postUnits * 100).toFixed(1)}%`);
 console.log(`性能问题期（发售第 7-17 天）退款率: ${(w2ref / w2gross * 100).toFixed(1)}%`);
+const disc = sales.filter((r) => r.date >= DISCOUNT[0] && r.date <= DISCOUNT[1]);
+console.log(`折扣期（${DISCOUNT[0]} ~ ${DISCOUNT[1]}）Σ销量 ${disc.reduce((a, r) => a + r.gross, 0)}`);
+console.log(`地区报告: ${regionalRows.length} 行（${REGION_WEIGHTS.length} 个国家/地区）`);
 console.log(`fixture 已写入 ${fixturesDir}`);

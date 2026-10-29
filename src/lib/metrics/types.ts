@@ -10,6 +10,15 @@ export type MetricStatus =
   | "insufficient"
   | "unavailable";
 
+/** 立项书模板库的三阶段分组。 */
+export type MetricGroup = "prelaunch" | "launch" | "liveops";
+
+export const GROUP_LABELS: Record<MetricGroup, string> = {
+  prelaunch: "发售前 · 愿望单健康",
+  launch: "发售期 · 首周表现",
+  liveops: "长线运营",
+};
+
 /** D4 信任机制：每个分析结果必须展示的口径链路。 */
 export interface CaliberInfo {
   definition: string;
@@ -47,20 +56,66 @@ export interface RefundWeekPoint {
   pct: number | null;
 }
 
+export interface LinePctPoint {
+  label: string;
+  pct: number | null;
+}
+
+export interface LinePctLine {
+  y: number;
+  color: string;
+  label: string;
+}
+
+export interface BarItem {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+export interface BarMarkLine {
+  y: number;
+  label: string;
+}
+
 export type MetricChartData =
   | { kind: "weekly-net"; weeks: WeekBar[] }
   | { kind: "conversion"; points: ConversionPoint[] }
-  | { kind: "refund"; points: RefundWeekPoint[] };
+  | { kind: "refund"; points: RefundWeekPoint[] }
+  | {
+      kind: "line-pct";
+      points: LinePctPoint[];
+      band?: [number, number];
+      lines?: LinePctLine[];
+    }
+  | {
+      kind: "bars";
+      items: BarItem[];
+      unit: "int" | "pct";
+      horizontal?: boolean;
+      maxPct?: number;
+      markLines?: BarMarkLine[];
+    };
 
 export type MetricId =
   | "wishlist-accumulation"
+  | "wishlist-deletion-rate"
+  | "wishlist-visit-conversion"
+  | "wishlist-launch-conversion"
+  | "first-week-share"
   | "page-conversion"
-  | "refund-rate";
+  | "refund-rate"
+  | "discount-pulse-coefficient"
+  | "review-sales-estimate"
+  | "review-score-tier"
+  | "traffic-source-structure"
+  | "regional-sales-structure";
 
 export interface MetricResult {
   id: MetricId;
   name: string;
   subtitle: string;
+  group: MetricGroup;
   status: MetricStatus;
   statusLabel: string;
   display: string;

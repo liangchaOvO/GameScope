@@ -30,16 +30,24 @@ export const TRAFFIC_SPECS: ColumnSpec[] = [
 ];
 
 export const SALES_SPECS: ColumnSpec[] = [
-  { field: "date", aliases: ["Date", "日期"], required: true, type: "date", label: "日期" },
+  { field: "date", aliases: ["Date", "DateLocal", "日期"], required: true, type: "date", label: "日期" },
   { field: "units", aliases: ["Units", "Units Sold", "Gross Units", "销量", "毛销量"], required: true, type: "number", label: "销量" },
   { field: "refunds", aliases: ["Refunds", "Refund Units", "Units Refunded", "退款"], required: false, type: "number", label: "退款" },
   { field: "type", aliases: ["Transaction Type", "Type", "交易类型"], required: false, type: "string", label: "交易类型" },
+];
+
+export const REGIONAL_SPECS: ColumnSpec[] = [
+  { field: "date", aliases: ["Date", "DateLocal", "日期"], required: true, type: "date", label: "日期" },
+  { field: "country", aliases: ["Country", "Countries", "Region", "国家", "地区"], required: true, type: "string", label: "国家/地区" },
+  { field: "units", aliases: ["Units", "Units Sold", "销量"], required: true, type: "number", label: "销量" },
+  { field: "refunds", aliases: ["Refunds", "Refund Units", "退款"], required: false, type: "number", label: "退款" },
 ];
 
 export const KIND_SPECS: Record<DatasetKind, ColumnSpec[]> = {
   wishlist: WISHLIST_SPECS,
   traffic: TRAFFIC_SPECS,
   sales: SALES_SPECS,
+  regional: REGIONAL_SPECS,
 };
 
 /**
@@ -50,10 +58,12 @@ export function detectCsvKind(headers: string[]): DatasetKind | null {
   const candidates: DatasetKind[] = [];
   if (matches(WISHLIST_SPECS, headers)) candidates.push("wishlist");
   if (matches(TRAFFIC_SPECS, headers)) candidates.push("traffic");
+  if (matches(REGIONAL_SPECS, headers)) candidates.push("regional");
   if (matches(SALES_SPECS, headers)) candidates.push("sales");
   if (candidates.length === 1) return candidates[0];
   if (candidates.length > 1) {
-    // wishlist wins on its distinctive columns, traffic over sales on visits
+    // 国家/地区列最具区分度；其次愿望单列；再次流量表（含 visits）
+    if (candidates.includes("regional")) return "regional";
     if (candidates.includes("wishlist")) return "wishlist";
     if (candidates.includes("traffic")) return "traffic";
     return "sales";
@@ -73,6 +83,7 @@ export function bestCandidateKind(
     [
       ["wishlist", WISHLIST_SPECS],
       ["traffic", TRAFFIC_SPECS],
+      ["regional", REGIONAL_SPECS],
       ["sales", SALES_SPECS],
     ] as [DatasetKind, ColumnSpec[]][]
   ).map(([kind, specs]) => ({ kind, missing: resolveHeaders(headers, specs).missing }));

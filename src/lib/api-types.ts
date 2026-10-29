@@ -1,5 +1,6 @@
 import type { DatasetMeta, SanityWarning } from "./types";
 import type { MetricResult } from "./metrics/types";
+import type { StoredSnapshots } from "./db/store";
 
 export interface SkippedRow {
   rowNo: number;
@@ -22,4 +23,7 @@ export interface OverviewDTO {
   datasets: DatasetMeta[];
   metrics: MetricResult[];
   hasData: boolean;
+  user: { email: string };
+  project: { id: number; name: string; appId: number | null };
+  snapshots?: StoredSnapshots;
 }

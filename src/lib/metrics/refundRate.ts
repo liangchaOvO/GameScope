@@ -24,6 +24,7 @@ export function computeRefundRate(
     id: "refund-rate" as const,
     name: "退款率",
     subtitle: "退款占毛销量的比例",
+    group: "launch" as const,
     caliber: {
       definition: "期内退款占毛购买量的比例。",
       formula: "退款率 = Σ退款数 ÷ Σ毛购买数（未扣退款）",
@@ -118,6 +119,7 @@ export function computeRefundRate(
     id: "refund-rate",
     name: "退款率",
     subtitle: "退款占毛销量的比例",
+    group: "launch",
     status,
     statusLabel,
     display: ratePct == null ? "—" : `${ratePct.toFixed(1)}%`,

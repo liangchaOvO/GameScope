@@ -1,47 +1,20 @@
 import type { WishDayRow } from "../types";
-import { dateDiffDays, isoWeekStart, minMaxDates, weekLabel } from "../dates";
+import { isoWeekStart, minMaxDates, weekLabel } from "../dates";
 import { fmtInt, fmtSignedInt } from "../format";
-import { mean, median, safeDiv, sum } from "./util";
+import { mean, safeDiv, sum } from "./util";
+import { detectPulseDays } from "./pulse";
 import type { MetricResult, MetricSource, WeekBar } from "./types";
 
 /**
  * 模板 1：愿望单积累速率（发售前 · 愿望单健康）
- * 周净增 + 自然增长/活动脉冲拆分。
- *
- * 口径（经验规则，业内非官方标准）：
- * - 周净增 = Σ(新增 − 删单 − 购买移除 − 礼物移除)
- * - 脉冲日：当日新增 ≥ max(3 × 前 28 天新增中位数, 中位数 + 20)
+ * 周净增 + 自然增长/活动脉冲拆分。脉冲日判定见共享模块 pulse.ts（经验规则）。
  */
-
-const PULSE_WINDOW_DAYS = 28;
-const PULSE_MIN_BASELINE_DAYS = 7;
 
 function dailyNet(r: WishDayRow): number {
   return (
     r.net ??
     (r.adds ?? 0) - (r.deletes ?? 0) - (r.purchases ?? 0) - (r.gifts ?? 0)
   );
-}
-
-function detectPulseDays(rows: WishDayRow[]): boolean[] {
-  const pulses: boolean[] = [];
-  for (let i = 0; i < rows.length; i++) {
-    const cur = rows[i];
-    const priorAdds: number[] = [];
-    for (let j = i - 1; j >= 0; j--) {
-      const diff = dateDiffDays(rows[j].date, cur.date);
-      if (diff > PULSE_WINDOW_DAYS) break;
-      if (diff > 0) priorAdds.push(rows[j].adds ?? 0);
-    }
-    if (priorAdds.length < PULSE_MIN_BASELINE_DAYS) {
-      pulses.push(false);
-      continue;
-    }
-    const med = median(priorAdds) ?? 0;
-    const threshold = Math.max(3 * med, med + 20);
-    pulses.push((cur.adds ?? 0) >= threshold);
-  }
-  return pulses;
 }
 
 export function computeWishlistAccumulation(
@@ -52,6 +25,7 @@ export function computeWishlistAccumulation(
     id: "wishlist-accumulation",
     name: "愿望单积累速率",
     subtitle: "周净增 · 区分自然增长与活动脉冲",
+    group: "prelaunch",
     status: "unavailable",
     statusLabel: "缺少数据",
     display: "—",
@@ -117,6 +91,7 @@ export function computeWishlistAccumulation(
     id: "wishlist-accumulation",
     name: "愿望单积累速率",
     subtitle: "周净增 · 区分自然增长与活动脉冲",
+    group: "prelaunch",
     status: insufficient ? "insufficient" : "info",
     statusLabel: insufficient ? "样本不足" : "参考（无固定区间）",
     display: recentAvg == null ? "—" : `${fmtSignedInt(recentAvg)} / 周`,

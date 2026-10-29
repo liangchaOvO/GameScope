@@ -1,11 +1,12 @@
 /** Shared domain types. */
 
-export type DatasetKind = "wishlist" | "traffic" | "sales";
+export type DatasetKind = "wishlist" | "traffic" | "sales" | "regional";
 
 export const KIND_LABELS: Record<DatasetKind, string> = {
   wishlist: "愿望单报告",
   traffic: "流量与转化报告",
   sales: "销售报告（含退款）",
+  regional: "地区销售报告",
 };
 
 /** One row of the Steamworks wishlist report (daily). */
@@ -41,6 +42,14 @@ export interface SalesDayRow {
   date: string;
   grossUnits: number;
   refundUnits: number;
+}
+
+/** Regional sales report row per (date, country). */
+export interface RegionalRow {
+  date: string;
+  country: string;
+  units: number;
+  refunds: number;
 }
 
 export type SanityLevel = "info" | "warn";

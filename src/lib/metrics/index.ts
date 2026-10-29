@@ -1,18 +1,32 @@
 import type {
   DatasetMeta,
+  RegionalRow,
   SalesDayRow,
   TrafficSourceRow,
   WishDayRow,
 } from "../types";
+import type { StoredSnapshots } from "../db/store";
 import { computeWishlistAccumulation } from "./wishlistAccumulation";
+import { computeWishlistDeletionRate } from "./wishlistDeletionRate";
+import { computeWishlistVisitConversion } from "./wishlistVisitConversion";
+import { computeWishlistLaunchConversion } from "./wishlistLaunchConversion";
+import { computeFirstWeekShare } from "./firstWeekShare";
 import { computePageConversion } from "./pageConversion";
 import { computeRefundRate } from "./refundRate";
+import { computeDiscountPulseCoefficient } from "./discountPulseCoefficient";
+import { computeReviewSalesEstimate } from "./reviewSalesEstimate";
+import { computeReviewScoreTier } from "./reviewScoreTier";
+import { computeTrafficSourceStructure } from "./trafficSourceStructure";
+import { computeRegionalSalesStructure } from "./regionalSalesStructure";
 import type { MetricResult } from "./types";
+import { aggregateTrafficDaily } from "./aggregate";
 
 export interface MetricInputs {
   wishlist: { rows: WishDayRow[]; meta: DatasetMeta } | null;
   traffic: { rows: TrafficSourceRow[]; meta: DatasetMeta } | null;
   sales: { rows: SalesDayRow[]; meta: DatasetMeta } | null;
+  regional: { rows: RegionalRow[]; meta: DatasetMeta } | null;
+  snapshots: StoredSnapshots | null;
 }
 
 function src(meta: DatasetMeta | undefined) {
@@ -20,31 +34,46 @@ function src(meta: DatasetMeta | undefined) {
   return { filename: meta.filename, warnings: meta.warnings };
 }
 
-/** Compute all registered metric templates from stored data. */
+/** Compute all 12 registered metric templates from stored project data. */
 export function computeAllMetrics(inputs: MetricInputs): MetricResult[] {
-  // 流量按日聚合（跨流量来源求和）
-  const trafficDaily = inputs.traffic
-    ? aggregateTrafficDaily(inputs.traffic.rows)
-    : [];
+  const trafficDaily = inputs.traffic ? aggregateTrafficDaily(inputs.traffic.rows) : [];
+  const wishSrc = src(inputs.wishlist?.meta);
+  const trafficSrc = src(inputs.traffic?.meta);
+  const salesSrc = src(inputs.sales?.meta);
+  const regionalSrc = src(inputs.regional?.meta);
+  const snapshots = inputs.snapshots ?? { reviews: null, price: null, fetchedAt: null };
+  const snapshotSrc = { filename: "Steam 评价/价格快照", warnings: [] };
 
   return [
-    computeWishlistAccumulation(
+    // 发售前 · 愿望单健康
+    computeWishlistAccumulation(inputs.wishlist?.rows ?? [], wishSrc),
+    computeWishlistDeletionRate(inputs.wishlist?.rows ?? [], wishSrc),
+    computeWishlistVisitConversion(
       inputs.wishlist?.rows ?? [],
-      src(inputs.wishlist?.meta)
+      trafficDaily,
+      wishSrc,
+      trafficSrc
     ),
-    computePageConversion(trafficDaily, src(inputs.traffic?.meta)),
-    computeRefundRate(inputs.sales?.rows ?? [], src(inputs.sales?.meta)),
+    // 发售期 · 首周表现
+    computeWishlistLaunchConversion(
+      inputs.wishlist?.rows ?? [],
+      inputs.sales?.rows ?? [],
+      wishSrc,
+      salesSrc
+    ),
+    computeFirstWeekShare(inputs.sales?.rows ?? [], salesSrc),
+    computePageConversion(trafficDaily, trafficSrc),
+    computeRefundRate(inputs.sales?.rows ?? [], salesSrc),
+    // 长线运营
+    computeDiscountPulseCoefficient(
+      inputs.wishlist?.rows ?? [],
+      inputs.sales?.rows ?? [],
+      wishSrc,
+      salesSrc
+    ),
+    computeReviewSalesEstimate(snapshots, snapshotSrc),
+    computeReviewScoreTier(snapshots, snapshotSrc),
+    computeTrafficSourceStructure(inputs.traffic?.rows ?? [], trafficSrc),
+    computeRegionalSalesStructure(inputs.regional?.rows ?? [], regionalSrc),
   ];
-}
-
-/** 流量「日期×来源」行按日聚合（跨来源求和），供指标计算与入库警告共用。 */
-export function aggregateTrafficDaily(rows: TrafficSourceRow[]) {
-  const map = new Map<string, { date: string; visits: number; units: number }>();
-  for (const r of rows) {
-    const cur = map.get(r.date) ?? { date: r.date, visits: 0, units: 0 };
-    cur.visits += r.visits;
-    cur.units += r.units;
-    map.set(r.date, cur);
-  }
-  return [...map.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
 }

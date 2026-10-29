@@ -23,6 +23,7 @@ export function computePageConversion(
     id: "page-conversion" as const,
     name: "页面转化率",
     subtitle: "商店页访问 → 购买",
+    group: "launch" as const,
     caliber: {
       definition: "访问商店页的用户中产生购买的比例。",
       formula: "转化率 = Σ购买数 ÷ Σ商店页访问数（购买开放期内按日汇总）",
@@ -102,6 +103,7 @@ export function computePageConversion(
     id: "page-conversion",
     name: "页面转化率",
     subtitle: "商店页访问 → 购买",
+    group: "launch",
     status,
     statusLabel,
     display: convPct == null ? "—" : `${convPct.toFixed(1)}%`,

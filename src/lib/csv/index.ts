@@ -5,9 +5,11 @@ import { resolveHeaders } from "./schema";
 import { mapWishlist, resolveWishlistHeaders } from "./wishlist";
 import { mapTraffic, resolveTrafficHeaders } from "./traffic";
 import { mapSales, resolveSalesHeaders } from "./sales";
-import { checkSales, checkTraffic, checkWishlist } from "../sanity/check";
-import { aggregateTrafficDaily } from "../metrics/index";
+import { mapRegional, resolveRegionalHeaders } from "./regional";
+import { checkRegional, checkSales, checkTraffic, checkWishlist } from "../sanity/check";
+import { aggregateTrafficDaily } from "../metrics/aggregate";
 import {
+  replaceRegional,
   replaceSales,
   replaceTraffic,
   replaceWishlist,
@@ -16,11 +18,15 @@ import { KIND_LABELS, type SanityWarning } from "../types";
 import type { FileUploadResult } from "../api-types";
 
 /**
- * Ingest one uploaded file: decode → parse → detect kind → map → validate →
- * store. Errors must be human-readable and point at the offending
- * column/row (F1 acceptance).
+ * Ingest one uploaded file into a project: decode → parse → detect kind →
+ * map → validate → store. Errors must be human-readable and point at the
+ * offending column/row (F1 acceptance).
  */
-export function ingestBuffer(filename: string, buf: Buffer): FileUploadResult {
+export function ingestBuffer(
+  projectId: number,
+  filename: string,
+  buf: Buffer
+): FileUploadResult {
   const text = decodeBuffer(buf);
   if (!text.trim()) {
     return { filename, ok: false, error: "文件为空或无法解码。" };
@@ -79,7 +85,7 @@ export function ingestBuffer(filename: string, buf: Buffer): FileUploadResult {
       });
     }
     warnings.push(...checkWishlist(rows));
-    const meta = replaceWishlist(filename, rows, warnings);
+    const meta = replaceWishlist(projectId, filename, rows, warnings);
     return {
       filename,
       ok: true,
@@ -120,11 +126,43 @@ export function ingestBuffer(filename: string, buf: Buffer): FileUploadResult {
     // sanity runs on daily aggregates
     const daily = aggregateTrafficDaily(rows);
     warnings.push(...checkTraffic(daily));
-    const meta = replaceTraffic(filename, rows, warnings);
+    const meta = replaceTraffic(projectId, filename, rows, warnings);
     return {
       filename,
       ok: true,
       kindLabel: KIND_LABELS.traffic,
+      rowCount: meta.rowCount,
+      dateMin: meta.dateMin,
+      dateMax: meta.dateMax,
+      skipped: skipped.length > 0 ? skipped : undefined,
+      warnings,
+    };
+  }
+
+  if (kind === "regional") {
+    const { missing } = resolveHeaders(table.headers, KIND_SPECS.regional);
+    if (missing.length > 0) {
+      return missingColumns(filename, missing, table.headers);
+    }
+    const map = resolveRegionalHeaders(table.headers);
+    const { rows, skipped, emptyNumberCells } = mapRegional(table, map);
+    if (rows.length === 0) {
+      return allRowsFailed(filename, skipped);
+    }
+    const warnings: SanityWarning[] = [];
+    if (emptyNumberCells > 0) {
+      warnings.push({
+        level: "warn",
+        code: "empty-number-cells",
+        message: `有 ${emptyNumberCells} 个「销量」空值，已按 0 参与计算。`,
+      });
+    }
+    warnings.push(...checkRegional(rows));
+    const meta = replaceRegional(projectId, filename, rows, warnings);
+    return {
+      filename,
+      ok: true,
+      kindLabel: KIND_LABELS.regional,
       rowCount: meta.rowCount,
       dateMin: meta.dateMin,
       dateMax: meta.dateMax,
@@ -151,7 +189,7 @@ export function ingestBuffer(filename: string, buf: Buffer): FileUploadResult {
       message: `有 ${emptyNumberCells} 个「销量」空值，已按 0 参与计算。`,
     });
   }
-  const meta = replaceSales(filename, rows, warnings);
+  const meta = replaceSales(projectId, filename, rows, warnings);
   return {
     filename,
     ok: true,
