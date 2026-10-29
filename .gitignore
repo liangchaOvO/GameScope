@@ -5,8 +5,13 @@ node_modules/
 .next/
 out/
 
-# database (local data)
-data/
+# database (local data, root only)
+/data/
+
+# debug artifacts (may contain session tokens)
+/cookies*.txt
+/overview.json
+/demo_result.json
 
 # zwork workspace infra
 .zwork/

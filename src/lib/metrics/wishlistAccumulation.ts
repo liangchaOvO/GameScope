@@ -34,7 +34,7 @@ export function computeWishlistAccumulation(
     caliber: {
       definition: "每周愿望单净增量及其构成（自然增长 vs 活动脉冲）。",
       formula:
-        "周净增 = Σ(新增 − 删单 − 购买移除 − 礼物移除)；脉冲日：当日新增 ≥ max(3 × 前28天新增中位数, 中位数+20)",
+        "周净增 = Σ(新增 − 删单 − 购买移除 − 礼物移除)；脉冲日：当日新增 ≥ max(3 × 前28天非脉冲日新增中位数, 中位数+20)",
       fields: ["新增", "删单", "购买移除", "礼物移除", "总量"],
       rowCount: 0,
       dateRange: null,
@@ -113,7 +113,7 @@ export function computeWishlistAccumulation(
     caliber: {
       definition: "每周愿望单净增量及其构成（自然增长 vs 活动脉冲）。",
       formula:
-        "周净增 = Σ(新增 − 删单 − 购买移除 − 礼物移除)；脉冲日：当日新增 ≥ max(3 × 前28天新增中位数, 中位数+20)",
+        "周净增 = Σ(新增 − 删单 − 购买移除 − 礼物移除)；脉冲日：当日新增 ≥ max(3 × 前28天非脉冲日新增中位数, 中位数+20)",
       fields: ["新增", "删单", "购买移除", "礼物移除", "总量"],
       rowCount: sorted.length,
       dateRange: min && max ? { from: min, to: max } : null,
