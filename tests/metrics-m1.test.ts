@@ -268,8 +268,8 @@ describe("模板 11：流量来源结构", () => {
     expect(m.display).toBe("最大来源 Search 40.8%"); // 400/980
     const bars = m.chartData.kind === "bars" ? m.chartData.items : [];
     expect(bars[0].label).toBe("Search");
-    // External 8% < 10% → 曝光瓶颈提示
-    expect(m.confidenceNote).toContain("外部流量占比低于 10%");
+    // External 8% < 10% → 启发式提示（无社区出处阈值，仅披露内部规则）
+    expect(m.confidenceNote).toContain("启发式提示");
   });
 
   it("无数据 → unavailable", () => {

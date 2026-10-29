@@ -43,7 +43,7 @@ export function computeRegionalSalesStructure(
       status: "unavailable",
       statusLabel: "缺少数据",
       display: "—",
-      rangeNote: "无固定区间；用于定价与本地化优先级决策。",
+      rangeNote: "无固定；主要市场占比高时优先保证其语言与价格带质量（经验值，非官方标准）。",
       confidenceNote: "缺少地区销售报告（Steamworks → Regional Sales Report 导出）。上传后自动计算。",
     };
   }
@@ -76,7 +76,7 @@ export function computeRegionalSalesStructure(
     statusLabel: "结构参考",
     display: topPct == null ? "—" : `最大市场 ${top[0]} ${fmtPct(topPct == null ? undefined : topPct * 100)}`,
     secondary: `Σ销量 ${fmtInt(total)} · 覆盖 ${byCountry.size} 个国家/地区`,
-    rangeNote: "无固定健康区间；主要市场占比越高，其本地化质量与定价策略的杠杆越大（经验值，非官方标准）。",
+    rangeNote: "无固定；主要市场占比高时优先保证其语言与价格带质量（经验值，非官方标准）。",
     caliber: {
       ...base.caliber,
       rowCount: rows.length,

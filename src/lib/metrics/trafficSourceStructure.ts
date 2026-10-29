@@ -41,7 +41,7 @@ export function computeTrafficSourceStructure(
       status: "unavailable",
       statusLabel: "缺少数据",
       display: "—",
-      rangeNote: "无固定区间；用于诊断曝光瓶颈（外部占比 <10% 为经验提示）。",
+      rangeNote: "无固定；外部来源占比过低时，曝光更依赖 Steam 商店算法波动（经验值，非官方标准）。",
       confidenceNote: "缺少流量与转化报告（需含「流量来源」维度）。上传后自动计算。",
     };
   }
@@ -76,10 +76,10 @@ export function computeTrafficSourceStructure(
       .map(([s, v]) => `${s} ${fmtPct(safeDiv(v, total) == null ? undefined : (safeDiv(v, total) as number) * 100)}`)
       .join(" · "),
     rangeNote:
-      "无固定健康区间；经验提示：外部来源占比 <10% 时曝光高度依赖 Steam 内部推荐，易受算法波动影响（经验值，非官方标准）。",
+      "无固定；外部来源占比过低时，曝光更依赖 Steam 商店算法波动（经验值，非官方标准）。",
     confidenceNote:
       total > 0 && externalShare / total < 0.1
-        ? "外部流量占比低于 10%：曝光瓶颈在 Steam 站内，考虑预告片投放/创作者 Key/社区活动。"
+        ? `外部来源占比 ${(safeDiv(externalShare, total) as number) * 100 < 10 ? "低于 10%" : "偏低"}（启发式提示）：曝光高度依赖 Steam 站内渠道，可考虑站外投放、创作者 Key、社区活动。`
         : undefined,
     caliber: {
       ...base.caliber,
