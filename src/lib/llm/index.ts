@@ -9,7 +9,9 @@ import { effectiveSettings, type LlmSettings } from "./config";
  * 备用切换步骤见 docs/llm-providers.md。
  */
 export function getProvider(settings?: LlmSettings): LlmProvider {
-  const s = settings ?? effectiveSettings({ localMode: true });
+  // 无显式 settings 时只用环境变量（服务器安全默认）；本地模式调用方应显式传入
+  // effectiveSettings({ localMode: isLocalMode() })——见 /api/ask。
+  const s = settings ?? effectiveSettings({ localMode: false });
   if (s.provider === "mock") return new MockProvider();
   return new GlmProvider({
     apiKey: s.apiKey || undefined,

@@ -18,7 +18,7 @@ GameScope 是开源软件（AGPL-3.0），BYOK（Bring Your Own Key）：模板�
 # 方式一：Node.js（Node 20+）
 npm install
 npm run dev          # → http://localhost:3100（本地模式，免登录）
-npm test             # 93 项测试
+npm test             # 101 项测试
 
 # 方式二：Docker（数据持久化在卷里）
 docker build -t gamescope .
@@ -75,7 +75,7 @@ docker run -p 3100:3100 -v gamescope-data:/app/data gamescope
 ## 给开发者
 
 ```bash
-npm test        # 93 项（vitest）：模板手工计算基准、解析器、AI 问数管道与陷阱拒答
+npm test        # 101 项（vitest）：模板手工计算基准、解析器、AI 问数管道与陷阱拒答、本地模式与设置层
 npm run fixtures  # 重新生成演示数据（确定性种子）
 npx tsc --noEmit  # 类型检查
 ```

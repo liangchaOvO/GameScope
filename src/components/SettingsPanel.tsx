@@ -194,6 +194,27 @@ export default function SettingsPanel() {
             >
               {busy ? "处理中…" : "保存并测试连接"}
             </button>
+            <button
+              onClick={async () => {
+                setBusy(true);
+                setMsg(null);
+                try {
+                  const res = await fetch("/api/settings", { method: "DELETE" });
+                  if (!res.ok) throw new Error(`清除失败（${res.status}）`);
+                  setApiKey("");
+                  await refresh();
+                  setMsg("✓ 已清除本机配置（恢复内置默认与环境变量）。注：在线模式不读取本文件。");
+                } catch (e) {
+                  setMsg(e instanceof Error ? e.message : "操作失败");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              disabled={busy}
+              className="rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+            >
+              清除本机配置
+            </button>
             <span className="text-xs text-gray-400">
               Key 明文存于本机 data/settings.json（已 gitignore）；本工具不做任何上传或遥测。
             </span>
