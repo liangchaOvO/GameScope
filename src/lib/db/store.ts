@@ -280,8 +280,8 @@ export function setProjectExpiry(projectId: number, expiresAt: string | null): v
   getDb().prepare(`UPDATE projects SET expires_at = ? WHERE id = ?`).run(expiresAt, projectId);
 }
 
-/** 清理过期匿名试用数据（数据/快照/会话/用户/项目一并删除），返回清理的项目数。 */
-export function sweepExpiredTrials(now = new Date().toISOString()): number {
+/** 清理过期匿名试用数据（数据/快照/会话/用户/项目一并删除），返回被清理的项目 id 列表。 */
+export function sweepExpiredTrials(now = new Date().toISOString()): number[] {
   const db = getDb();
   const expired = db
     .prepare(`SELECT id, user_id FROM projects WHERE expires_at IS NOT NULL AND expires_at < ?`)
@@ -299,7 +299,17 @@ export function sweepExpiredTrials(now = new Date().toISOString()): number {
       db.prepare(`DELETE FROM users WHERE id = ? AND email LIKE 'anon-%@trial.local'`).run(p.user_id);
     })();
   }
-  return expired.length;
+  return expired.map((p) => p.id);
+}
+
+/** 列出当前已过期但尚未清理的匿名试用项目 id（供内存态同步回收）。 */
+export function listExpiredTrialProjects(now = new Date().toISOString()): number[] {
+  const db = getDb();
+  return (
+    db
+      .prepare(`SELECT id FROM projects WHERE expires_at IS NOT NULL AND expires_at < ?`)
+      .all(now) as { id: number }[]
+  ).map((r) => r.id);
 }
 
 export function updateProject(

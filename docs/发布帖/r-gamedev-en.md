@@ -13,7 +13,7 @@ Hi r/gamedev! I'm an indie dev who got tired of two things: Steamworks gives me 
 - Every result shows its **full caliber**: the exact formula, how many rows and which date range participated, and a "teaching card" (what it is / why it's computed this way / healthy range / what to ask next). Health ranges are community rules of thumb, clearly labeled — no fake official benchmarks.
 - **AI Q&A (BYOK, optional):** ask "why did my wishlists dip?" — the LLM only parses intent (metric + time range); all math runs in local template code, so it can't hallucinate numbers. If intent parsing fails it falls back to the dashboard. Works with any OpenAI-compatible endpoint, including **free tiers and a zero-cost local Ollama setup**. The template dashboard works with **no API key at all**.
 
-**Privacy:** everything runs locally — SQLite file on your machine, no telemetry, your API key stays in a local config file (or in-memory if you use the hosted trial). Commercially sensitive data? Run it locally.
+**Privacy:** everything runs locally — SQLite file on your machine, zero telemetry; your API key stays in a local config file. The optional hosted trial counts anonymous usage events (counts only, never content) and keeps your key in memory only. Commercially sensitive data? Run it locally.
 
 **Get it:** GitHub repo (AGPL-3.0): <你的仓库地址> — `npm install && npm run dev`, or Docker. A built-in fictional demo dataset lets you try the full flow in 30 seconds.
 

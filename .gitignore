@@ -10,6 +10,7 @@ out/
 
 # debug artifacts (may contain session tokens)
 /cookies*.txt
+/jar*.txt
 /overview.json
 /demo_result.json
 /req.json

@@ -218,5 +218,12 @@
       "ok": true,
       "detail": "正确拒绝（降级）"
     }
-  ]
+  ],
+  "gateContext": {
+    "model": "GLM-5.3-Flash",
+    "endpoint": "scnet.cn OpenAI 兼容端点（https://api.scnet.cn/api/llm/v1/chat/completions）",
+    "gateThreshold": 24,
+    "strictScore": 29,
+    "scoreNote": "严格按 expectMetricId 评分 29/30；q06「愿望单转化率」经创始人确认措辞歧义、两愿望单转化模板均合法（acceptAnyOf），修正口径为 30/30；陷阱 10/10 正确拒绝"
+  }
 }

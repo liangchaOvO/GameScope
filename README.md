@@ -24,10 +24,10 @@ GameScope 是开源软件（AGPL-3.0），BYOK（Bring Your Own Key）：模板�
 ## 快速开始
 
 ```bash
-# 方式一：Node.js（Node 20+）
+# 方式一：Node.js（要求 Node ≥24，见 engines 与故障排查）
 npm install
 npm run dev          # → http://localhost:3100（本地模式，免登录）
-npm test             # 101 项测试
+npm test             # 108 项测试
 
 # 方式二：Docker（数据持久化在卷里）
 docker build -t gamescope .
@@ -71,6 +71,7 @@ docker run -p 3100:3100 -v gamescope-data:/app/data gamescope
 | CCU 峰值 | — | 已裁掉 |
 
 数据仅存本地 SQLite（`data/gamescope.db`）；演示数据为内置的虚构游戏全周期数据。
+**遥测口径**：本地部署零遥测零上传；在线试用站仅做匿名功能计数（次数：会话/上传/提问/完成，不含任何数据内容），用于发布成功率指标。
 
 ## AGPL-3.0 说明
 
@@ -86,7 +87,7 @@ docker run -p 3100:3100 -v gamescope-data:/app/data gamescope
 欢迎贡献：bug 走 [Issue 模板](.github/ISSUE_TEMPLATE/bug_report.yml)，**新指标模板**走 [模板贡献模板](.github/ISSUE_TEMPLATE/metric_template.yml)（五要素 + 健康区间出处 + 手工计算基准）；PR 前跑 `npm test && npx tsc --noEmit`（CI 同口径）。
 
 ```bash
-npm test        # 101 项（vitest）：模板手工计算基准、解析器、AI 问数管道与陷阱拒答、本地模式与设置层
+npm test        # 108 项（vitest）：模板手工计算基准、解析器、AI 问数管道与陷阱拒答、本地模式与设置层
 npm run fixtures  # 重新生成演示数据（确定性种子）
 npx tsc --noEmit  # 类型检查
 ```
@@ -103,6 +104,8 @@ docs/              立项书、数据格式调研、M0/M1 演示指南与审阅�
 ### English (short)
 
 GameScope is a local-first analytics companion for indie game developers: upload your Steamworks CSV exports (wishlists, traffic & conversion, sales, regional), get 12 metric templates with transparent calibers, health ranges and teaching cards, and ask questions in natural language — the LLM only parses intent, all math runs in local code. Free and local (template dashboard needs no API key); AI features are BYOK via any OpenAI-compatible endpoint, including zero-cost local Ollama. Licensed under AGPL-3.0. Quick start: `npm install && npm run dev` → http://localhost:3100.
+
+Telemetry: the local app phones home never. The optional hosted trial counts anonymous usage events only (session/upload/ask counters — never content).
 
 ---
 

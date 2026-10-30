@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { LlmSettings } from "./llm/config";
-import { sweepExpiredTrials } from "./db/store";
+import { listExpiredTrialProjects, sweepExpiredTrials } from "./db/store";
 
 /**
  * M2′ 在线试用站支撑层（仅 GAMESCOPE_LOCAL_MODE=off 时启用）：
@@ -139,6 +139,23 @@ export function countEvent(projectId: number, event: "session" | "upload" | "ask
   persistCounters(c);
 }
 
+/** 回收已过期项目的内存 Key 与计数状态（由 sweepIfNeeded 调用）。 */
+export function purgeMemoryFor(projectIds: number[]): void {
+  const mem = memSettings();
+  const c = counters();
+  for (const id of projectIds) {
+    mem.delete(id);
+    c.sessions.delete(id);
+    c.uploads.delete(id);
+    c.asks.delete(id);
+    if (c.completedMarked.has(id)) {
+      // 已完成会话被清理：从已完成集合移除，但累计完成数保留（历史事实）
+      c.completedMarked.delete(id);
+    }
+  }
+  persistCounters(c);
+}
+
 export function trialCounters(): { sessions: number; uploads: number; asks: number; completed: number } {
   const c = counters();
   return {
@@ -151,10 +168,15 @@ export function trialCounters(): { sessions: number; uploads: number; asks: numb
 
 // ---------------- 清理节流 ----------------
 
-/** 过期试用数据清理（每次至多 60s 一次；由 overview/ask 等热路径触发）。 */
+/** 过期试用数据清理（每次至多 60s 一次；由 overview/ask 等热路径触发），并同步回收内存态。 */
 export function sweepIfNeeded(force = false): number {
   const now = Date.now();
   if (!force && g.__gsLastSweep && now - g.__gsLastSweep < 60_000) return 0;
   g.__gsLastSweep = now;
-  return sweepExpiredTrials();
+  const ids = listExpiredTrialProjects();
+  if (ids.length > 0) {
+    purgeMemoryFor(ids);
+    sweepExpiredTrials();
+  }
+  return ids.length;
 }

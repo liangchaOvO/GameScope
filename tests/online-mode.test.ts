@@ -52,7 +52,8 @@ describe("M2′ 会话级存储 TTL 清理", () => {
     setProjectExpiry(p2.id, new Date(Date.now() + 3600_000).toISOString()); // 未过期
 
     const swept = sweepExpiredTrials();
-    expect(swept).toBeGreaterThanOrEqual(1);
+    expect(swept.length).toBeGreaterThanOrEqual(1);
+    expect(swept).toContain(p1.id);
     // p1 的数据应已清空（datasets 为空）；p2 仍在
     const after = getDatasets(p2.id);
     expect(Array.isArray(after)).toBe(true);
