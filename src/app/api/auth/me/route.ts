@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getSession, isLocalMode } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,5 +9,9 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "未登录。" }, { status: 401 });
   }
-  return NextResponse.json({ user: session.user, project: session.project });
+  return NextResponse.json({
+    user: session.user,
+    project: session.project,
+    mode: isLocalMode() ? "local" : "online",
+  });
 }

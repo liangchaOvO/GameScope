@@ -50,7 +50,9 @@ export class GlmProvider implements LlmProvider {
       if (!text) throw new Error("GLM: 本地 token 服务返回空凭据");
       return text.startsWith("Bearer ") ? text : `Bearer ${text}`;
     }
-    throw new Error("GLM: 缺少 API Key——请设置环境变量 GAMESCOPE_GLM_API_KEY（获取方式见 docs/llm-providers.md）");
+    throw new Error(
+      "GLM: 缺少 API Key——请在页面「设置」中配置，或设置环境变量 GAMESCOPE_GLM_API_KEY（见 docs/llm-providers.md）"
+    );
   }
 
   async interpretIntent(question: string): Promise<unknown> {
@@ -85,6 +87,28 @@ export class GlmProvider implements LlmProvider {
       throw new Error("GLM: 响应中没有文本内容");
     }
     return extractJson(content);
+  }
+
+  /** 连接测试：一次极小 completion（设置页「测试连接」用）。 */
+  async ping(): Promise<{ latencyMs: number; model: string }> {
+    const started = Date.now();
+    const auth = await this.getAuthHeader();
+    const res = await this.fetchImpl(this.baseUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: auth },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [{ role: "user", content: "ping" }],
+        max_tokens: 8,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}${body ? `（${body.slice(0, 120)}）` : ""}`);
+    }
+    const json = (await res.json().catch(() => null)) as { choices?: unknown[] } | null;
+    if (!json?.choices) throw new Error("响应中没有 choices 字段（端点是否为 OpenAI 兼容 chat/completions？）");
+    return { latencyMs: Date.now() - started, model: this.model };
   }
 }
 

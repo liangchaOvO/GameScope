@@ -1,68 +1,103 @@
 # GameScope
 
-**独立游戏开发者数据分析助手** —— 接入 Steam 数据后，用可信的指标口径看懂你的游戏生意。
-每个结论附带口径说明与教学卡片，让不懂商业数据分析的开发者也能看懂自己的游戏生意。
+**独立游戏开发者的 Steam 数据分析助手**——上传 Steamworks 导出的 CSV（愿望单、流量与转化、销售、地区），得到 12 个内嵌发行经验口径的指标模板：每个结果都附带**完整口径链路（公式、参与行数、时间范围）与教学卡片**，并用 AI 问数（LLM 只解析意图，计算全部在本地代码执行，绝不编造数值）。
 
-> 当前阶段：**M1 终验** —— F1–F6 全量交付（含 AI 问数与教学卡片），待创始人终验。
-> 立项书见 [docs/GameScope-项目立项书-v1.0.md](docs/GameScope-项目立项书-v1.0.md)。
+GameScope 是开源软件（AGPL-3.0），BYOK（Bring Your Own Key）：模板看板**完全免费、完全本地**，AI 问数接入你自己的任意 OpenAI 兼容端点（含本机 Ollama 零成本方案）。
+
+> **Screenshot / GIF**：将随发布物料提供（docs/screenshots/）；在本地 `npm run dev` 打开即可看到完整界面。
+
+---
+
+## 为什么是 GameScope
+
+通用 BI 假设你会建模，Steam 后台只给你原始数字。GameScope 把独立游戏发行社区的经验口径（愿望单积累、页面转化 5–12%、退款率 <10% 正常/>15% 警示、Boxleiter 估算等，均标注为经验值而非官方标准）固化成 12 个模板，发售前看愿望单健康、发售期看首周表现、长线看折扣脉冲与市场结构——并坚持「口径透明 + 代码算数 + 异常警告」的信任三件套。
 
 ## 快速开始
 
 ```bash
-npm install        # 安装依赖（Node 20+，本项目在 Node 24 开发验证）
-npm run dev        # 启动开发服务器 → http://localhost:3100
-npm test           # 运行单元测试（vitest，37 项）
-npm run fixtures   # 重新生成演示数据与脏数据样例（确定性种子）
+# 方式一：Node.js（Node 20+）
+npm install
+npm run dev          # → http://localhost:3100（本地模式，免登录）
+npm test             # 93 项测试
+
+# 方式二：Docker（数据持久化在卷里）
+docker build -t gamescope .
+docker run -p 3100:3100 -v gamescope-data:/app/data gamescope
 ```
 
-打开 http://localhost:3100，注册后点「一键载入演示数据」即可体验完整流程；
-也可以上传自己的 Steamworks 导出 CSV（支持愿望单 / 流量与转化 / 销售 / 地区销售报告，自动识别类型）、输入 App ID 拉取公开评论与价格，并用自然语言问数。
+打开 http://localhost:3100 → 点「一键载入演示数据」体验完整流程（虚构游戏《星尘旅人》全周期数据）；随后可上传你自己的 Steamworks 导出 CSV（自动识别类型）。
 
-## M1 交付范围（F1–F6 全量）
+### 启用 AI 问数（BYOK，可选）
 
-| 模块 | 说明 |
-|------|------|
-| 账号体系（F6） | 邮箱注册/登录（scrypt 哈希 + httpOnly 会话），每账号 1 个游戏项目，数据全表按项目隔离 |
-| Steam Web API（F1） | App ID → 公开评论/价格快照（官方只读接口，≥3s 限速，失败保旧快照）；P2 CCU 已正式砍掉 |
-| 指标模板 ×12（F2） | 三阶段分组：发售前 3 / 发售期 4 / 长线运营 5；口径链路 + 健康区间 + 教学卡片 |
-| AI 问数（F3） | LLM 只出意图 JSON（指标+维度+时间范围），计算全部代码层执行；白名单校验；失败降级模板看板；主 Provider GLM 可切换，输入 <5K tokens；30 题回归集 |
-| 教学卡片（F4） | 12 张模板卡（双人审核）+ 问数结果卡复用同一 TeachingCardInfo |
-| CSV 解析器 | BOM/UTF-16 编码嗅探、4 种报告类型自动识别（别名表驱动）、行级校验、可读报错（指明列与行） |
-| 信任机制（D4） | 每个结果展示：定义、公式、参与字段、行数、时间范围、数据来源文件（问数与看板同源同构） |
-| 校验层（F5） | 重复日期、日期缺口、空值占比、总量一致性、未知地区、快照时效 → 显著警告而非静默输出 |
-| 存储 | 本地 SQLite（`data/gamescope.db`，better-sqlite3），数据按账号隔离 |
+页面「⚙ LLM Provider 设置」中选择预设或手填，保存并测试连接即可；不配置时模板看板全功能可用，问数自动降级为看板引导。
 
-M1 后半程（待创始人审核教学卡片后）：AI 自然语言问数（LLM 可切换、禁止 LLM 算数、30 题回归集）+ AI 结论教学卡片。
+| Provider | baseUrl | 模型示例 | 成本 | 备注 |
+|---|---|---|---|---|
+| 智谱 GLM | `https://open.bigmodel.cn/api/paas/v4/chat/completions` | `glm-4-flash` | 有免费额度 | 国内直连，注册即送额度 |
+| DeepSeek | `https://api.deepseek.com/chat/completions` | `deepseek-chat` | 极低 | OpenAI 兼容 |
+| Moonshot Kimi | `https://api.moonshot.cn/v1/chat/completions` | `moonshot-v1-8k` | 低 | OpenAI 兼容 |
+| **Ollama（本机）** | `http://localhost:11434/v1/chat/completions` | `qwen2.5:7b` 等任意已拉取模型 | **零成本、零出网** | `ollama pull qwen2.5:7b` 后即用 |
+| 任意 OpenAI 兼容端点 | 自填 | 自填 | — | LM Studio / vLLM / OpenRouter 均可 |
 
-## 目录结构
+- Key 明文存于本机 `data/settings.json`（已 gitignore），不上传、不遥测；
+- 也可用环境变量：`GAMESCOPE_GLM_API_KEY` / `GAMESCOPE_GLM_BASE_URL` / `GAMESCOPE_GLM_MODEL`（详见 [docs/llm-providers.md](docs/llm-providers.md)）；
+- LLM 只负责把问题解析为意图 JSON（指标 + 时间范围），计算一律在本地模板代码执行；解析失败自动降级到模板看板。
+
+## 指标模板（12 个，欢迎贡献）
+
+**发售前**：愿望单积累速率（周净增 + 脉冲识别）· 愿望单删单率（>8% 预警线）· 愿望单/页面访问转化（3–10%）
+**发售期**：愿望单→首周销量转化（10–20%）· 首周销量占比 · 页面转化率（5–12%）· 退款率（<10% 正常 / >15% 警示）
+**长线运营**：折扣愿望单脉冲系数（5–20 倍带）· 评论销量估算（Boxleiter ×25–70，区间展示）· 好评率分档 · 流量来源结构 · 地区销售结构
+
+每个模板五要素：定义 / 计算口径（精确到字段与公式）/ 健康区间（社区经验值，非 Valve 官方标准）/ 推荐图表 / 教学卡片。
+
+## 支持的数据
+
+| 数据 | 获取方式 | 状态 |
+|---|---|---|
+| Steamworks 愿望单报告 CSV | 后台手动导出上传 | ✅ |
+| Steamworks 流量与转化 CSV | 后台手动导出上传 | ✅ |
+| Steamworks 销售 / 地区销售 CSV | 后台手动导出上传 | ✅（测试数据为构造格式，真实导出回归进行中） |
+| Steam 公开评论与价格 | 输入 App ID 拉取（官方只读接口） | ✅ |
+| CCU 峰值 | — | 已裁掉 |
+
+数据仅存本地 SQLite（`data/gamescope.db`）；演示数据为内置的虚构游戏全周期数据。
+
+## AGPL-3.0 说明
+
+本项目以 [GNU AGPL-3.0](LICENSE) 发布。要点（非法律建议）：
+
+- 你可以自由使用、修改、再分发本项目，包括商业用途；
+- 如果你修改了代码并把它作为网络服务提供给他人，AGPL 要求你同样以 AGPL 开放修改后版本的源码（这是 AGPL 与 GPL 的关键差异）；
+- 你自己的游戏数据、你上传的 CSV、你配置的 API Key 都属于你，与本项目代码无关；
+- 贡献回主仓库的代码默认以同一许可证发布。
+
+## 给开发者
+
+```bash
+npm test        # 93 项（vitest）：模板手工计算基准、解析器、AI 问数管道与陷阱拒答
+npm run fixtures  # 重新生成演示数据（确定性种子）
+npx tsc --noEmit  # 类型检查
+```
 
 ```
-src/
-  app/                 # Next.js App Router（页面 + API 路由）
-    api/data/          #   upload / demo / reset
-    api/overview/      #   数据集 + 指标计算结果
-  components/          # UI 组件（ECharts 图表、口径面板、教学卡片）
-  lib/
-    csv/               # 解码 → 解析 → 类型识别 → 映射 → 校验 → 入库
-    db/store.ts        # SQLite 存储层
-    metrics/           # 指标模板（纯函数，单元测试覆盖）
-    sanity/check.ts    # 数据质量校验
-    llm/provider.ts    # M1 LLM 可切换接口预留
-scripts/generate-fixtures.mjs   # 演示数据生成器（虚构游戏《星尘旅人》）
-fixtures/              # 测试 CSV（含 dirty/ 脏数据样例）
-tests/                 # vitest 单元测试（手工计算基准）
-docs/                  # 立项书、Steamworks CSV 格式调研、M0 演示指南
+src/lib/csv/       Steamworks CSV 解析（编码/类型识别/行级校验/可读报错）
+src/lib/metrics/   12 个指标模板（纯函数 + METRIC_REGISTRY，看板与问数同源）
+src/lib/ask/       AI 问数管道（意图白名单校验 → 复用模板计算 → 失败降级）
+src/lib/llm/       Provider 抽象（GLM/OpenAI 兼容/mock，BYOK 配置）
+src/lib/db/        SQLite 存储（本地单用户 / 在线多用户两种模式）
+docs/              立项书、数据格式调研、M0/M1 演示指南与审阅报告、LLM 接入文档
 ```
 
-## 技术栈
+### English (short)
 
-与立项书第 9 节建议一致，无偏离：
-Next.js 15（App Router）· React 19 · Tailwind CSS 4 · ECharts 5 · SQLite（better-sqlite3）· papaparse · vitest · TypeScript。
+GameScope is a local-first analytics companion for indie game developers: upload your Steamworks CSV exports (wishlists, traffic & conversion, sales, regional), get 12 metric templates with transparent calibers, health ranges and teaching cards, and ask questions in natural language — the LLM only parses intent, all math runs in local code. Free and local (template dashboard needs no API key); AI features are BYOK via any OpenAI-compatible endpoint, including zero-cost local Ollama. Licensed under AGPL-3.0. Quick start: `npm install && npm run dev` → http://localhost:3100.
 
-## 数据与合规
+---
 
-- 只处理用户自愿上传的 CSV 与官方公开 API 的只读快照；数据仅存本地，不做任何上传/同步。
-- 所有「健康区间 / 经验区间」均为独立游戏发行社区经验值，非 Valve 官方标准。
-- 演示数据为虚构游戏《星尘旅人》（含虚构评分快照 AppID 3141592），由固定种子生成器产生，可复现。
-- P2 CCU 数据源已正式砍掉（2026-10-29 创始人决定），无代码残留。
-- Steamworks CSV 格式依据见 [docs/steamworks-csv-formats.md](docs/steamworks-csv-formats.md)；Steam Web API 客户端见 [docs/steam-web-api.md](docs/steam-web-api.md)。
+## 文档
+
+- [docs/steamworks-csv-formats.md](docs/steamworks-csv-formats.md) — Steamworks 导出格式调研（含来源与未核实项）
+- [docs/llm-providers.md](docs/llm-providers.md) — Provider 接入与切换
+- [docs/M1-终验-演示指南.md](docs/M1-终验-演示指南.md) — 全功能演示与 F1–F6 验收对照
+- [docs/GameScope-项目立项书-v1.0.md](docs/GameScope-项目立项书-v1.0.md) — 项目立项书

@@ -5,18 +5,27 @@ import {
   deleteSession,
   getSessionUserId,
   getUserById,
+  getUserByEmail,
+  createUser,
   getOrCreateProject,
   type Project,
   type UserRow,
 } from "./db/store";
 
 /**
- * F6 认证：邮箱 + 密码（scrypt 哈希），httpOnly Cookie 会话。
- * 数据按账号隔离：所有业务数据挂在 project_id 下（每账号 1 个项目，D5）。
+ * 认证层（F6）。两种运行模式：
+ * - 本地模式（GAMESCOPE_LOCAL_MODE，默认开启）：跳过登录，懒创建唯一的本地用户与项目，
+ *   数据存本机 SQLite；auth 代码保留，在线试用站将以匿名自动会话模式复用。
+ * - 在线模式（GAMESCOPE_LOCAL_MODE=off）：邮箱 + 密码（scrypt），httpOnly Cookie 会话。
  */
 
 const SESSION_COOKIE = "gs_session";
 const SESSION_TTL_DAYS = 30;
+const LOCAL_USER_EMAIL = "local@gamescope.local";
+
+export function isLocalMode(): boolean {
+  return (process.env.GAMESCOPE_LOCAL_MODE ?? "on").toLowerCase() !== "off";
+}
 
 export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -66,8 +75,29 @@ export interface Session {
   project: Project;
 }
 
-/** Resolve the current session from the request cookie; null when signed out. */
+declare global {
+  // eslint-disable-next-line no-var
+  var __gamescopeLocalUserId: number | undefined;
+}
+
+/** 本地模式唯一用户（懒创建；复用 users/projects 表，隔离语义与在线模式一致）。 */
+export function ensureLocalSession(): Session {
+  if (globalThis.__gamescopeLocalUserId == null) {
+    const existing = getUserByEmail(LOCAL_USER_EMAIL);
+    const user =
+      existing ??
+      createUser(LOCAL_USER_EMAIL, hashPassword(crypto.randomBytes(24).toString("hex")));
+    getOrCreateProject(user.id);
+    globalThis.__gamescopeLocalUserId = user.id;
+  }
+  const user = getUserById(globalThis.__gamescopeLocalUserId)!;
+  const project = getOrCreateProject(user.id);
+  return { user: { id: user.id, email: user.email }, project };
+}
+
+/** 解析当前会话：本地模式直接返回本地会话；在线模式读 Cookie。 */
 export async function getSession(): Promise<Session | null> {
+  if (isLocalMode()) return ensureLocalSession();
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;

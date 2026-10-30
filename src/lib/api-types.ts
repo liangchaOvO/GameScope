@@ -25,5 +25,6 @@ export interface OverviewDTO {
   hasData: boolean;
   user: { email: string };
   project: { id: number; name: string; appId: number | null };
+  mode: "local" | "online";
   snapshots?: StoredSnapshots;
 }

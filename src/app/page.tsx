@@ -10,6 +10,7 @@ import UploadPanel from "../components/UploadPanel";
 import MetricCard from "../components/MetricCard";
 import MetricChart from "../components/MetricChart";
 import AskResult from "../components/AskResult";
+import SettingsPanel from "../components/SettingsPanel";
 import { WarningList } from "../components/InfoPanels";
 
 const GROUP_ORDER: MetricGroup[] = ["prelaunch", "launch", "liveops"];
@@ -112,10 +113,18 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-500">
-            <span>{overview?.user.email}</span>
-            <button onClick={handleLogout} className="text-gray-500 underline hover:text-gray-700">
-              退出登录
-            </button>
+            {overview?.mode === "local" ? (
+              <span className="rounded-full border border-green-300 bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                本地模式 · 数据存于本机
+              </span>
+            ) : (
+              <>
+                <span>{overview?.user.email}</span>
+                <button onClick={handleLogout} className="text-gray-500 underline hover:text-gray-700">
+                  退出登录
+                </button>
+              </>
+            )}
           </div>
         </div>
         <p className="text-sm text-gray-600">
@@ -153,6 +162,8 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      <SettingsPanel />
 
       <section className="space-y-4" aria-label="AI 问数">
         <h2 className="text-base font-semibold text-gray-800">AI 问数（F3）</h2>

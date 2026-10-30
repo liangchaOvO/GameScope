@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getSession, isLocalMode } from "@/lib/auth";
 import {
   getAppSnapshots,
   getDatasets,
@@ -45,12 +45,14 @@ export async function GET() {
   const dto: OverviewDTO & {
     user: { email: string };
     project: { id: number; name: string; appId: number | null };
+    mode: "local" | "online";
   } = {
     datasets,
     metrics,
     hasData: datasets.length > 0,
     user: session.user,
     project: { id: project.id, name: project.name, appId: project.appId },
+    mode: isLocalMode() ? "local" : "online",
   };
   return NextResponse.json(dto);
 }

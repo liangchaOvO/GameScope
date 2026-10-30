@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getSession, isLocalMode } from "@/lib/auth";
 import { loadMetricInputs } from "@/lib/ask/inputs";
 import { ask } from "@/lib/ask/pipeline";
 import { getProvider } from "@/lib/llm";
+import { effectiveSettings } from "@/lib/llm/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +34,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const outcome = await ask(question, inputs, getProvider());
+  // 本地模式：读本机设置文件；在线模式：仅环境变量（会话级 BYOK 在 M2′ 接入）
+  const provider = getProvider(effectiveSettings({ localMode: isLocalMode() }));
+  const outcome = await ask(question, inputs, provider);
   return NextResponse.json(outcome);
 }

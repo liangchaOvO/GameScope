@@ -1,26 +1,23 @@
 import type { LlmProvider } from "./provider";
 import { GlmProvider } from "./glm";
 import { MockProvider } from "./mock";
+import { effectiveSettings, type LlmSettings } from "./config";
 
 /**
- * Provider 注册（立项书第 9 节：LLM 可切换）。
- * 主 Provider：GLM（智谱开放平台）；备用切换步骤见 docs/llm-providers.md。
+ * Provider 注册（立项书第 9 节：LLM 可切换；阶段 T：支持设置页 BYOK 配置）。
+ * 主 Provider：GLM / 任意 OpenAI 兼容端点（同一实现，baseUrl 可换，含 Ollama 本地零成本）。
+ * 备用切换步骤见 docs/llm-providers.md。
  */
-export function getProvider(): LlmProvider {
-  const which = (process.env.GAMESCOPE_LLM_PROVIDER ?? "glm").toLowerCase();
-  switch (which) {
-    case "mock":
-      return new MockProvider();
-    case "glm":
-    default:
-      return new GlmProvider({
-        apiKey: process.env.GAMESCOPE_GLM_API_KEY,
-        model: process.env.GAMESCOPE_GLM_MODEL,
-        baseUrl: process.env.GAMESCOPE_GLM_BASE_URL,
-        tokenUrl: process.env.GAMESCOPE_GLM_TOKEN_URL ?? null,
-      });
-  }
+export function getProvider(settings?: LlmSettings): LlmProvider {
+  const s = settings ?? effectiveSettings({ localMode: true });
+  if (s.provider === "mock") return new MockProvider();
+  return new GlmProvider({
+    apiKey: s.apiKey || undefined,
+    baseUrl: s.baseUrl,
+    model: s.model,
+  });
 }
 
 export { GlmProvider, MockProvider };
 export type { LlmProvider, IntentResult } from "./provider";
+export type { LlmSettings } from "./config";

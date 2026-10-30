@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.zwork
+data
+*.log
+docs
+fixtures/dirty
+tests
+coverage
+*.md
+!README.md
+Dockerfile
+.dockerignore

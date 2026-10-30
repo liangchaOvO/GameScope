@@ -2,7 +2,8 @@
   "name": "gamescope",
   "version": "0.1.0",
   "private": true,
-  "description": "GameScope — 独立游戏开发者数据分析助手（M0）",
+  "description": "GameScope — 独立游戏开发者数据分析助手（M1 · 开源）",
+  "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev -p 3100",
     "build": "next build",
@@ -21,7 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.0",
-    "@types/better-sqlite3": "^9.6.0",
+    "@types/better-sqlite3": "^1.7.0",
     "@types/node": "^24.0.0",
     "@types/papaparse": "^5.3.15",
     "@types/react": "^19.0.0",
