@@ -118,12 +118,9 @@ export default function Home() {
                 本地模式 · 数据存于本机
               </span>
             ) : (
-              <>
-                <span>{overview?.user.email}</span>
-                <button onClick={handleLogout} className="text-gray-500 underline hover:text-gray-700">
-                  退出登录
-                </button>
-              </>
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                在线试用 · 匿名会话 · 数据自动清理
+              </span>
             )}
           </div>
         </div>
@@ -163,7 +160,15 @@ export default function Home() {
         </div>
       </section>
 
-      <SettingsPanel />
+      {overview?.mode === "online" && overview.trial && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          在线试用：CSV 与项目数据为会话级存储，{overview.trial.ttlHours} 小时后自动清理（到期
+          {overview.trial.expiresAt ? ` ${overview.trial.expiresAt.slice(0, 16).replace("T", " ")}` : ""}）；
+          API Key 仅内存单次转发，不落盘、不写日志、不进入统计。商业敏感数据建议使用本地部署（见 README）。
+        </div>
+      )}
+
+      <SettingsPanel mode={overview?.mode} />
 
       <section className="space-y-4" aria-label="AI 问数">
         <h2 className="text-base font-semibold text-gray-800">AI 问数（F3）</h2>

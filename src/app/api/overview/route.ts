@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession, isLocalMode } from "@/lib/auth";
+import { getSession, isLocalMode, trialTtlHours } from "@/lib/auth";
 import {
   getAppSnapshots,
   getDatasets,
@@ -9,6 +9,7 @@ import {
   getWishlistRows,
 } from "@/lib/db/store";
 import { computeAllMetrics } from "@/lib/metrics";
+import { sweepIfNeeded } from "@/lib/trial";
 import type { OverviewDTO } from "@/lib/api-types";
 
 export const runtime = "nodejs";
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登录。" }, { status: 401 });
+  if (!isLocalMode()) sweepIfNeeded(); // 在线试用站：节流清理过期会话数据
 
   const { project } = session;
   const datasets = getDatasets(project.id);
@@ -46,6 +48,7 @@ export async function GET() {
     user: { email: string };
     project: { id: number; name: string; appId: number | null };
     mode: "local" | "online";
+    trial: { ttlHours: number; expiresAt: string | null } | null;
   } = {
     datasets,
     metrics,
@@ -53,6 +56,7 @@ export async function GET() {
     user: session.user,
     project: { id: project.id, name: project.name, appId: project.appId },
     mode: isLocalMode() ? "local" : "online",
+    trial: isLocalMode() ? null : { ttlHours: trialTtlHours(), expiresAt: project.expiresAt },
   };
   return NextResponse.json(dto);
 }

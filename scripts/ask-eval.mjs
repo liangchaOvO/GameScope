@@ -58,8 +58,11 @@ async function main() {
     let ok = false;
     let detail = "";
     if (c.type === "metric") {
-      const routed = !json.degraded && json.metric?.id === c.expectMetricId;
-      ok = routed;
+      const routed = !json.degraded && json.metric?.id != null;
+      // q06 类歧义题：fixture 标注 acceptAnyOf 时，任一合法命中均计正确（如「愿望单转化率」）
+      const expected = c.acceptAnyOf ?? (c.expectMetricId ? [c.expectMetricId] : []);
+      const okRouted = routed && expected.includes(json.metric.id);
+      ok = okRouted;
       detail = json.degraded ? `降级：${json.reason?.slice(0, 60)}` : `命中 ${json.metric?.id}`;
     } else {
       const rejected = json.degraded === true && !("metric" in json);

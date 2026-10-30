@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
-import { getSession } from "@/lib/auth";
+import { getSession, isLocalMode } from "@/lib/auth";
+import { clientIp, countEvent, rateLimit } from "@/lib/trial";
 import { ingestBuffer } from "@/lib/csv";
 import { saveAppSnapshots } from "@/lib/db/store";
 import type { FileUploadResult } from "@/lib/api-types";
@@ -14,6 +15,7 @@ const FIXTURES = [
   "sales-report.csv",
   "regional-report.csv",
 ];
+const DEMO_LIMIT_PER_HOUR = 5;
 
 /** 演示用虚构评分/价格快照（《星尘旅人》不存在于 Steam，随演示数据注入并明确标注）。 */
 const DEMO_SNAPSHOTS = {
@@ -35,9 +37,21 @@ const DEMO_SNAPSHOTS = {
   },
 };
 
-export async function POST() {
+export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登录。" }, { status: 401 });
+
+  if (!isLocalMode()) {
+    const rl = rateLimit(`demo:${clientIp(req)}`, DEMO_LIMIT_PER_HOUR, 3600_000);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: `操作过于频繁（IP 限速 ${DEMO_LIMIT_PER_HOUR} 次/小时），请 ${rl.retryAfterSec} 秒后重试。` },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+    countEvent(session.project.id, "session");
+    countEvent(session.project.id, "upload");
+  }
 
   const results: FileUploadResult[] = [];
   for (const name of FIXTURES) {

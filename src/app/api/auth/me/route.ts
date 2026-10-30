@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession, isLocalMode } from "@/lib/auth";
+import { getSession, isLocalMode, trialTtlHours } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,5 +13,8 @@ export async function GET() {
     user: session.user,
     project: session.project,
     mode: isLocalMode() ? "local" : "online",
+    trial: isLocalMode()
+      ? null
+      : { ttlHours: trialTtlHours(), expiresAt: session.project.expiresAt },
   });
 }

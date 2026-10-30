@@ -1,9 +1,9 @@
 {
-  "evaluatedAt": "2026-10-30T03:07:01.897Z",
-  "providerId": "mock",
+  "evaluatedAt": "2026-10-30T04:32:55.522Z",
+  "providerId": "glm",
   "note": "providerId=mock 为关键词规则意图（离线演示/管道回归）；接 GLM 后同脚本重跑即为真题实测",
   "total": 30,
-  "correct": 30,
+  "correct": 29,
   "passThreshold": 24,
   "passed": true,
   "trapsAllRejected": true,
@@ -47,8 +47,8 @@
       "id": "q06",
       "type": "metric",
       "question": "愿望单转化率健康吗？",
-      "ok": true,
-      "detail": "命中 wishlist-visit-conversion"
+      "ok": false,
+      "detail": "命中 wishlist-launch-conversion"
     },
     {
       "id": "q07",

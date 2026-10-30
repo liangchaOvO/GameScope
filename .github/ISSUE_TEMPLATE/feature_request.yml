@@ -1,0 +1,37 @@
+name: 💡 功能建议
+description: 提出一个功能想法（先看范围边界）
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        当前版本刻意不做：拖拽式仪表盘、多游戏对比库、预测建模、团队协作、移动端原生（见立项书 §8）。
+        与范围冲突的建议会被标记并归档，但仍然欢迎讨论。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题
+      validations:
+        required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的方案
+      validations:
+        required: true
+  - type: dropdown
+    id: who
+    attributes:
+      label: 适用于
+      options:
+        - 本地部署用户
+        - 在线试用站
+        - 两者
+    validations:
+      required: true
+  - type: checkboxes
+    id: willimplement
+    attributes:
+      label: 你是否愿意自己实现（AGPL 贡献回主仓库）
+      options:
+        - label: 愿意

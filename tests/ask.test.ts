@@ -14,6 +14,8 @@ interface AskCase {
   type: "metric" | "trap";
   question: string;
   expectMetricId?: string;
+  /** 措辞歧义题：任一命中均合法（如「愿望单转化率」） */
+  acceptAnyOf?: string[];
   expectTimeFrom?: string;
   trapReason?: string;
 }
@@ -168,7 +170,12 @@ describe("30 题测试集回归（管道接线 + 陷阱拒答）", () => {
       if (out.degraded) {
         throw new Error(`${c.id}「${c.question}」意外降级：${out.reason}`);
       }
-      expect(out.metric.id, c.id).toBe(c.expectMetricId);
+      expect(
+        c.acceptAnyOf
+          ? c.acceptAnyOf.includes(out.metric.id)
+          : out.metric.id === c.expectMetricId,
+        c.id,
+      ).toBe(true);
       // D4：口径链路必须存在（与看板同构）
       expect(out.metric.caliber.formula.length).toBeGreaterThan(0);
       expect(out.metric.teaching.what.length).toBeGreaterThan(0);

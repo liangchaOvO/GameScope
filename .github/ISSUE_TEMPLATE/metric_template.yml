@@ -1,0 +1,50 @@
+name: 📊 指标模板贡献
+description: 贡献一个新的指标模板（定义/口径/健康区间/图表/教学卡片）
+labels: ["metric-template"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        指标模板是 GameScope 的核心资产。每个模板必须包含五要素，且健康区间**必须标注来源与「经验值，非官方标准」**。
+        实现位置参考：`src/lib/metrics/`（纯函数 + 注册表 + 单元测试，测试需含手工计算基准）。
+  - type: input
+    id: name
+    attributes:
+      label: 模板名称
+      placeholder: "例：愿望单→愿望单页访问比"
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: ① 定义（一句话）
+      validations:
+        required: true
+  - type: textarea
+    id: caliber
+    attributes:
+      label: ② 计算口径（精确到字段与公式）
+      description: 说明用哪个数据源（愿望单/流量/销售/地区/快照）的哪些字段，如何聚合。
+      validations:
+        required: true
+  - type: textarea
+    id: range
+    attributes:
+      label: ③ 健康区间与来源
+      description: 经验区间数值 + 出处（GDC 演讲/发行商分享/行业媒体链接）。无社区出处的请说明为启发式，不得伪装成行业经验值。
+      validations:
+        required: true
+  - type: textarea
+    id: chart
+    attributes:
+      label: ④ 推荐图表
+  - type: textarea
+    id: teaching
+    attributes:
+      label: ⑤ 教学卡片（是什么/为什么这么算/健康区间/下一步问什么，合计 ≤120 字）
+      validations:
+        required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: 手工计算基准（至少 2 组输入→期望输出）

@@ -33,6 +33,12 @@ const PRESETS = [
     model: "moonshot-v1-8k",
   },
   {
+    name: "国家超算互联网 scnet.cn（有免费额度）",
+    provider: "openai-compat" as const,
+    baseUrl: "https://api.scnet.cn/api/llm/v1/chat/completions",
+    model: "GLM-5.3-Flash",
+  },
+  {
     name: "Ollama（本机，零成本）",
     provider: "openai-compat" as const,
     baseUrl: "http://localhost:11434/v1/chat/completions",
@@ -40,8 +46,12 @@ const PRESETS = [
   },
 ];
 
-/** 首次运行向导 / 设置页（本地模式）：BYOK Provider 配置，存本机 data/settings.json。 */
-export default function SettingsPanel() {
+/** 首次运行向导 / 设置页：BYOK Provider 配置。本地模式存本机文件；在线模式仅内存（不落盘）。 */
+export default function SettingsPanel({
+  mode = "local",
+}: {
+  mode?: "local" | "online";
+}) {
   const [state, setState] = useState<SettingsState | null>(null);
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState<SettingsState["settings"]["provider"]>("glm");
@@ -102,6 +112,8 @@ export default function SettingsPanel() {
       setBusy(false);
     }
   }
+
+  const isLocal = mode === "local";
 
   return (
     <div
@@ -203,7 +215,11 @@ export default function SettingsPanel() {
                   if (!res.ok) throw new Error(`清除失败（${res.status}）`);
                   setApiKey("");
                   await refresh();
-                  setMsg("✓ 已清除本机配置（恢复内置默认与环境变量）。注：在线模式不读取本文件。");
+                  setMsg(
+                    isLocal
+                      ? "✓ 已清除本机配置（恢复内置默认与环境变量）。"
+                      : "✓ 已清除内存中的 Key（恢复环境变量默认）。"
+                  );
                 } catch (e) {
                   setMsg(e instanceof Error ? e.message : "操作失败");
                 } finally {
@@ -216,7 +232,9 @@ export default function SettingsPanel() {
               清除本机配置
             </button>
             <span className="text-xs text-gray-400">
-              Key 明文存于本机 data/settings.json（已 gitignore）；本工具不做任何上传或遥测。
+              {isLocal
+                ? "Key 明文存于本机 data/settings.json（已 gitignore）；本工具不做任何上传或遥测。"
+                : "在线试用：Key 仅保存在服务器内存并单次转发给模型端点，随会话结束/服务重启清除；不落盘、不写日志、不进入统计。"}
             </span>
           </div>
           {msg && <p className="text-sm text-gray-700">{msg}</p>}

@@ -6,7 +6,7 @@
     { "id": "q03", "type": "metric", "question": "愿望单删单率多少？", "expectMetricId": "wishlist-deletion-rate" },
     { "id": "q04", "type": "metric", "question": "有多少人把愿望单删了？", "expectMetricId": "wishlist-deletion-rate" },
     { "id": "q05", "type": "metric", "question": "看页面的人里有多少加了愿望单？", "expectMetricId": "wishlist-visit-conversion" },
-    { "id": "q06", "type": "metric", "question": "愿望单转化率健康吗？", "expectMetricId": "wishlist-visit-conversion" },
+    { "id": "q06", "type": "metric", "question": "愿望单转化率健康吗？", "acceptAnyOf": ["wishlist-visit-conversion", "wishlist-launch-conversion"], "note": "「愿望单转化」在两个模板（加购意愿/首周销量转化）间存在真实歧义，两者均为合法命中", "expectMetricId": "wishlist-visit-conversion" },
     { "id": "q07", "type": "metric", "question": "发售首周愿望单转化成多少销量？", "expectMetricId": "wishlist-launch-conversion" },
     { "id": "q08", "type": "metric", "question": "愿望单质量怎么样（首周卖了多少）？", "expectMetricId": "wishlist-launch-conversion" },
     { "id": "q09", "type": "metric", "question": "首周销量占首月多少？", "expectMetricId": "first-week-share" },

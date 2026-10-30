@@ -8,6 +8,15 @@ GameScope 是开源软件（AGPL-3.0），BYOK（Bring Your Own Key）：模板�
 
 ---
 
+### 故障排查
+
+| 现象 | 原因与解法 |
+|---|---|
+| 启动报 `NODE_MODULE_VERSION` / `better-sqlite3 was compiled against a different Node.js version` | 原生模块与当前 Node 大版本不匹配：用**与安装依赖时一致的 Node 版本**（本项目要求 Node ≥24，见 `engines`），或在项目目录执行 `npm rebuild better-sqlite3` 重新编译；Docker 用户拉取最新镜像即可 |
+| 提问提示「缺少 API Key」 | 模板看板无需 Key；如需 AI 问数，在页面「⚙ 设置」配置任意 OpenAI 兼容端点（见下方 BYOK 表），或设置 `GAMESCOPE_GLM_API_KEY` |
+| Steam 数据拉取失败 | 需可直连 store.steampowered.com 的网络；错误路径会保留上次快照 |
+| 端口占用 | `npm run dev -- -p 3200` 或改 Docker `-p` 映射 |
+
 ## 为什么是 GameScope
 
 通用 BI 假设你会建模，Steam 后台只给你原始数字。GameScope 把独立游戏发行社区的经验口径（愿望单积累、页面转化 5–12%、退款率 <10% 正常/>15% 警示、Boxleiter 估算等，均标注为经验值而非官方标准）固化成 12 个模板，发售前看愿望单健康、发售期看首周表现、长线看折扣脉冲与市场结构——并坚持「口径透明 + 代码算数 + 异常警告」的信任三件套。
@@ -73,6 +82,8 @@ docker run -p 3100:3100 -v gamescope-data:/app/data gamescope
 - 贡献回主仓库的代码默认以同一许可证发布。
 
 ## 给开发者
+
+欢迎贡献：bug 走 [Issue 模板](.github/ISSUE_TEMPLATE/bug_report.yml)，**新指标模板**走 [模板贡献模板](.github/ISSUE_TEMPLATE/metric_template.yml)（五要素 + 健康区间出处 + 手工计算基准）；PR 前跑 `npm test && npx tsc --noEmit`（CI 同口径）。
 
 ```bash
 npm test        # 101 项（vitest）：模板手工计算基准、解析器、AI 问数管道与陷阱拒答、本地模式与设置层

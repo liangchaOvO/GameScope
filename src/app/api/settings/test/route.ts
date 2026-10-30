@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession, isLocalMode } from "@/lib/auth";
 import { effectiveSettings, isConfigured } from "@/lib/llm/config";
+import { getMemorySettings } from "@/lib/trial";
 import { GlmProvider } from "@/lib/llm/glm";
 
 export const runtime = "nodejs";
@@ -9,11 +10,10 @@ export const runtime = "nodejs";
 export async function POST() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登录。" }, { status: 401 });
-  if (!isLocalMode()) {
-    return NextResponse.json({ error: "设置页仅限本地模式。" }, { status: 403 });
-  }
 
-  const s = effectiveSettings({ localMode: true });
+  const s = isLocalMode()
+    ? effectiveSettings({ localMode: true })
+    : (getMemorySettings(session.project.id) ?? effectiveSettings({ localMode: false }));
   if (!isConfigured(s)) {
     return NextResponse.json({ ok: false, error: "尚未配置 API Key。" }, { status: 200 });
   }

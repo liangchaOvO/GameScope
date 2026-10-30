@@ -1,16 +1,31 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getSession, isLocalMode } from "@/lib/auth";
 import { ingestBuffer } from "@/lib/csv";
+import { clientIp, countEvent, rateLimit, sweepIfNeeded } from "@/lib/trial";
 import type { FileUploadResult } from "@/lib/api-types";
 
 export const runtime = "nodejs";
 
 const MAX_FILES = 10;
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const UPLOAD_LIMIT_PER_HOUR = 10;
 
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "未登录。" }, { status: 401 });
+
+  if (!isLocalMode()) {
+    sweepIfNeeded();
+    const rl = rateLimit(`upload:${clientIp(req)}`, UPLOAD_LIMIT_PER_HOUR, 3600_000);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: `上传过于频繁（IP 限速 ${UPLOAD_LIMIT_PER_HOUR} 次/小时），请 ${rl.retryAfterSec} 秒后重试。` },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+    countEvent(session.project.id, "session");
+    countEvent(session.project.id, "upload");
+  }
 
   let form: FormData;
   try {

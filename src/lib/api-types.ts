@@ -26,5 +26,6 @@ export interface OverviewDTO {
   user: { email: string };
   project: { id: number; name: string; appId: number | null };
   mode: "local" | "online";
+  trial?: { ttlHours: number; expiresAt: string | null } | null;
   snapshots?: StoredSnapshots;
 }

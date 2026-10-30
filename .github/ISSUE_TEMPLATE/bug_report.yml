@@ -1,0 +1,50 @@
+name: 🐛 Bug 报告
+description: 报告一个可复现的问题
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请先搜索已有 Issue 避免重复。**请勿上传真实销售数据或 API Key。**
+  - type: dropdown
+    id: area
+    attributes:
+      label: 出问题的模块
+      options:
+        - CSV 解析/上传
+        - 指标看板（12 模板）
+        - AI 问数
+        - Steam 快照拉取
+        - 设置 / Provider 配置
+        - Docker / 部署
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 …
+        2. 上传 …
+        3. 点击 …
+      validations:
+        required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 vs 实际行为
+      validations:
+        required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: 环境
+      placeholder: "Node 版本 / 浏览器 / Docker 或 npm / GAMESCOPE_LOCAL_MODE"
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: 报错日志（脱敏后）
+      description: 可贴终端报错或浏览器控制台输出；**请务必抹去 API Key 与真实数据**。

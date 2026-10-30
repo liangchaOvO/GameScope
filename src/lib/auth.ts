@@ -7,6 +7,8 @@ import {
   getUserById,
   getUserByEmail,
   createUser,
+  createAnonymousUser,
+  setProjectExpiry,
   getOrCreateProject,
   type Project,
   type UserRow,
@@ -22,6 +24,11 @@ import {
 const SESSION_COOKIE = "gs_session";
 const SESSION_TTL_DAYS = 30;
 const LOCAL_USER_EMAIL = "local@gamescope.local";
+/** 匿名试用会话 TTL（小时，env GAMESCOPE_TRIAL_TTL_HOURS 可调，默认 72h）。 */
+export function trialTtlHours(): number {
+  const v = Number(process.env.GAMESCOPE_TRIAL_TTL_HOURS);
+  return Number.isFinite(v) && v > 0 ? v : 72;
+}
 
 export function isLocalMode(): boolean {
   return (process.env.GAMESCOPE_LOCAL_MODE ?? "on").toLowerCase() !== "off";
@@ -95,18 +102,53 @@ export function ensureLocalSession(): Session {
   return { user: { id: user.id, email: user.email }, project };
 }
 
-/** 解析当前会话：本地模式直接返回本地会话；在线模式读 Cookie。 */
+/** 解析在线模式会话：有效 Cookie → 原会话；否则自动创建匿名试用会话（返回需种下的新 token）。 */
+export function resolveOnlineSession(token: string | null): {
+  session: Session;
+  newToken: string | null;
+  ttlHours: number;
+} {
+  if (token) {
+    const userId = getSessionUserId(token);
+    if (userId != null) {
+      const user = getUserById(userId);
+      if (user) {
+        return {
+          session: { user: { id: user.id, email: user.email }, project: getOrCreateProject(userId) },
+          newToken: null,
+          ttlHours: trialTtlHours(),
+        };
+      }
+    }
+  }
+  // 匿名自动会话：不注册、不收邮箱；项目带 TTL，由 sweepExpiredTrials 定期清理
+  const user = createAnonymousUser();
+  const ttlHours = trialTtlHours();
+  const project = getOrCreateProject(user.id);
+  setProjectExpiry(project.id, new Date(Date.now() + ttlHours * 3600_000).toISOString());
+  const { token: newToken } = createSession(user.id, Math.max(1, Math.ceil(ttlHours / 24)));
+  return {
+    session: { user: { id: user.id, email: user.email }, project: getOrCreateProject(user.id) },
+    newToken,
+    ttlHours,
+  };
+}
+
+/** 解析当前会话：本地模式直接返回本地会话；在线模式匿名自动会话/注册会话。 */
 export async function getSession(): Promise<Session | null> {
   if (isLocalMode()) return ensureLocalSession();
   const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  const userId = getSessionUserId(token);
-  if (userId == null) return null;
-  const user = getUserById(userId);
-  if (!user) return null;
-  const project = getOrCreateProject(userId);
-  return { user: { id: user.id, email: user.email }, project };
+  const token = store.get(SESSION_COOKIE)?.value ?? null;
+  const { session, newToken } = resolveOnlineSession(token);
+  if (newToken) {
+    store.set(SESSION_COOKIE, newToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: trialTtlHours() * 3600,
+    });
+  }
+  return session;
 }
 
 export const SESSION_COOKIE_NAME = SESSION_COOKIE;

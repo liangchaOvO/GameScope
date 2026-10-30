@@ -51,6 +51,7 @@ function createSchema(db: Database.Database): void {
       user_id INTEGER NOT NULL UNIQUE REFERENCES users(id),
       name TEXT NOT NULL,
       app_id INTEGER,
+      expires_at TEXT,
       created_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS datasets (
@@ -129,6 +130,13 @@ function getDb(): Database.Database {
       `);
     }
     createSchema(db);
+    // 增量迁移：projects.expires_at（M2′ 在线试用 TTL）
+    const projCols = (
+      db.prepare(`PRAGMA table_info(projects)`).all() as { name: string }[]
+    ).map((c) => c.name);
+    if (!projCols.includes("expires_at")) {
+      db.exec(`ALTER TABLE projects ADD COLUMN expires_at TEXT`);
+    }
     db.prepare(
       `INSERT INTO meta (key, value) VALUES ('schema_version', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -224,20 +232,74 @@ export interface Project {
   userId: number;
   name: string;
   appId: number | null;
+  /** 匿名试用项目的过期时间（本地/注册用户为 null） */
+  expiresAt: string | null;
 }
 
 export function getOrCreateProject(userId: number): Project {
   const db = getDb();
   const existing = db
-    .prepare(`SELECT id, user_id, name, app_id FROM projects WHERE user_id = ?`)
-    .get(userId) as { id: number; user_id: number; name: string; app_id: number | null } | undefined;
+    .prepare(`SELECT id, user_id, name, app_id, expires_at FROM projects WHERE user_id = ?`)
+    .get(userId) as {
+    id: number;
+    user_id: number;
+    name: string;
+    app_id: number | null;
+    expires_at: string | null;
+  } | undefined;
   if (existing) {
-    return { id: existing.id, userId: existing.user_id, name: existing.name, appId: existing.app_id };
+    return {
+      id: existing.id,
+      userId: existing.user_id,
+      name: existing.name,
+      appId: existing.app_id,
+      expiresAt: existing.expires_at,
+    };
   }
   const info = db
     .prepare(`INSERT INTO projects (user_id, name, created_at) VALUES (?, ?, ?)`)
     .run(userId, "我的游戏", isoNow());
-  return { id: Number(info.lastInsertRowid), userId, name: "我的游戏", appId: null };
+  return {
+    id: Number(info.lastInsertRowid),
+    userId,
+    name: "我的游戏",
+    appId: null,
+    expiresAt: null,
+  };
+}
+
+/** 匿名试用用户（M2′ 在线试用站；邮箱仅作内部标记，登录流不使用）。 */
+export function createAnonymousUser(): UserRow {
+  return createUser(
+    `anon-${crypto.randomUUID()}@trial.local`,
+    crypto.randomBytes(24).toString("hex")
+  );
+}
+
+export function setProjectExpiry(projectId: number, expiresAt: string | null): void {
+  getDb().prepare(`UPDATE projects SET expires_at = ? WHERE id = ?`).run(expiresAt, projectId);
+}
+
+/** 清理过期匿名试用数据（数据/快照/会话/用户/项目一并删除），返回清理的项目数。 */
+export function sweepExpiredTrials(now = new Date().toISOString()): number {
+  const db = getDb();
+  const expired = db
+    .prepare(`SELECT id, user_id FROM projects WHERE expires_at IS NOT NULL AND expires_at < ?`)
+    .all(now) as { id: number; user_id: number }[];
+  for (const p of expired) {
+    db.transaction(() => {
+      db.prepare(`DELETE FROM datasets WHERE project_id = ?`).run(p.id);
+      db.prepare(`DELETE FROM wishlist_rows WHERE project_id = ?`).run(p.id);
+      db.prepare(`DELETE FROM traffic_rows WHERE project_id = ?`).run(p.id);
+      db.prepare(`DELETE FROM sales_rows WHERE project_id = ?`).run(p.id);
+      db.prepare(`DELETE FROM regional_rows WHERE project_id = ?`).run(p.id);
+      db.prepare(`DELETE FROM app_snapshots WHERE project_id = ?`).run(p.id);
+      db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(p.user_id);
+      db.prepare(`DELETE FROM projects WHERE id = ?`).run(p.id);
+      db.prepare(`DELETE FROM users WHERE id = ? AND email LIKE 'anon-%@trial.local'`).run(p.user_id);
+    })();
+  }
+  return expired.length;
 }
 
 export function updateProject(
