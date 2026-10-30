@@ -178,12 +178,20 @@ describe("30 题测试集回归（管道接线 + 陷阱拒答）", () => {
     }
   });
 
-  it("10 条陷阱题：一律降级，结构上不携带任何指标结果（不编造）", async () => {
+  it("10 条陷阱题：一律降级，不携带 LLM 派生的指标结果（不编造）", async () => {
     for (const c of CASES.filter((x) => x.type === "trap")) {
       const out = await ask(c.question, inputs, provider);
       if (!out.degraded) throw new Error(`${c.id}「${c.question}」应降级，却返回了指标结果`);
       expect(out.reason.length).toBeGreaterThan(0);
     }
+  });
+
+  it("审阅盲区变体：转化成销量路由到首周转化；未来时态问题拒答", async () => {
+    const v1 = await ask("愿望单转化成销量怎么样？", inputs, provider);
+    if (v1.degraded) throw new Error("应路由到 wishlist-launch-conversion");
+    expect(v1.metric.id).toBe("wishlist-launch-conversion");
+    const v2 = await ask("下个月的愿望单会涨吗？", inputs, provider);
+    if (!v2.degraded) throw new Error("未来时态应拒答");
   });
 
   it("时间范围过滤生效：最近30天题的参与行数小于全量", async () => {

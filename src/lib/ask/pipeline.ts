@@ -10,9 +10,9 @@ import { dataWindowSummary, filterInputsByRange } from "./inputs";
  * F3 问数管道：问题 → LLM 意图 JSON → 代码层校验 → 复用模板计算（同源同构）。
  *
  * 硬性纪律：
- * - LLM 输出只有意图（指标/维度/时间范围），管道不做任何 LLM 数值的透传；
+ * - LLM 输出只有意图（指标/维度/时间范围），管道不透传任何 LLM 数值；
  * - 意图无效 / 定位不到指标 / Provider 失败 → 一律降级到模板看板引导；
- * - 结构上不可能编造：degraded 分支不携带任何 MetricResult。
+ * - 降级结果全部来自代码计算（computeAllMetrics），LLM 派生数值在结构上无路径。
  */
 
 export type AskOutcome =

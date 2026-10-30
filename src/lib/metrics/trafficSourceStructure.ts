@@ -6,7 +6,7 @@ import type { MetricResult, MetricSource } from "./types";
 
 /**
  * 模板 11：流量来源结构（长线运营）
- * 各来源访问占比，诊断曝光瓶颈。经验提示：外部流量占比 <10% 时曝光易受 Steam 算法波动影响。
+ * 各来源访问占比，诊断曝光瓶颈。经验提示：外部来源占比过低时，曝光更依赖 Steam 商店算法波动。
  */
 export function computeTrafficSourceStructure(
   rows: TrafficSourceRow[],
@@ -28,7 +28,7 @@ export function computeTrafficSourceStructure(
     teaching: {
       what: "商店页的访问都从哪来。",
       why: "按来源聚合访问占比，看出曝光依赖哪些渠道。",
-      range: "无固定；外部占比 <10% 时曝光易受算法波动（经验值，非官方标准）。",
+      range: "无固定；外部来源占比过低时，曝光更依赖 Steam 商店算法波动（经验值，非官方标准）。",
       next: "问「外部流量能不能放大」「哪个来源的转化率最高」。",
     },
     chartData: { kind: "bars" as const, items: [], unit: "pct" as const, horizontal: true },

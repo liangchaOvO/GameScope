@@ -30,7 +30,7 @@ export function computeRegionalSalesStructure(
     teaching: {
       what: "销量都来自哪些国家。",
       why: "按地区聚合销量占比，决定本地化与定价优先级。",
-      range: "无固定；主要市场占比高时优先保证其语言与价格带质量（经验值）。",
+      range: "无固定；主要市场占比高时优先保证其语言与价格带质量（经验值，非官方标准）。",
       next: "问「该不该加XX语本地化」「主要市场对价格敏感吗」。",
     },
     chartData: { kind: "bars" as const, items: [], unit: "pct" as const, horizontal: true },

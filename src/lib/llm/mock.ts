@@ -13,7 +13,7 @@ export class MockProvider implements LlmProvider {
     { keywords: ["删单", "删掉", "删除愿望", "删了"], metricId: "wishlist-deletion-rate" },
     { keywords: ["加愿望单", "加了愿望", "愿望单转化率", "加购"], metricId: "wishlist-visit-conversion" },
     { keywords: ["占比", "首月", "长尾", "脉冲型"], metricId: "first-week-share" },
-    { keywords: ["首周", "发售"], metricId: "wishlist-launch-conversion" },
+    { keywords: ["首周", "发售", "转化成销量"], metricId: "wishlist-launch-conversion" },
     { keywords: ["页面转化", "转化率"], metricId: "page-conversion" },
     { keywords: ["退款"], metricId: "refund-rate" },
     { keywords: ["折扣", "打折", "促销"], metricId: "discount-pulse-coefficient" },
@@ -24,10 +24,10 @@ export class MockProvider implements LlmProvider {
     { keywords: ["愿望单"], metricId: "wishlist-accumulation" },
   ];
 
-  // 陷阱信号：命中即 unknown（管道将降级，绝不产出数值）
+  // 陷阱信号：命中即 unknown（管道将降级，绝不产出数值）；含未来时态（预测/下月涨跌属第 8 节范围外）
   private readonly trapKeywords = [
     "博德之门", "竞品", "别的游戏", "其他游戏", "美元", "赚", "流水", "分成", "到账",
-    "预测", "下个月能卖", "主播", "带火", "小时", "导出", "excel", "写一段", "公告",
+    "预测", "下个月", "下月", "会涨", "会跌", "主播", "带火", "小时", "导出", "excel", "写一段", "公告",
     "差评", "抱怨",
   ];
 

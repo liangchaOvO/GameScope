@@ -108,7 +108,7 @@ export default function Home() {
           <div className="flex items-baseline gap-3">
             <h1 className="text-2xl font-bold tracking-tight">GameScope</h1>
             <span className="rounded-full border border-gray-300 bg-white px-2 py-0.5 text-xs text-gray-600">
-              M1 中期检查点 · 12 模板全量
+              M1 终验 · F1–F6 全量
             </span>
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-500">
@@ -119,8 +119,8 @@ export default function Home() {
           </div>
         </div>
         <p className="text-sm text-gray-600">
-          上传 Steamworks 导出的 CSV（自动识别类型）+ 输入 App ID 拉取公开评论/价格，查看 12 个指标模板。
-          AI 自然语言问数（F3）将在中期检查通过后交付。
+          上传 Steamworks 导出的 CSV（自动识别类型）+ 输入 App ID 拉取公开评论/价格，查看 12 个指标模板；
+          也可以用自然语言问数（LLM 只解析意图，计算在本地模板代码执行）。
         </p>
       </header>
 
@@ -260,7 +260,7 @@ export default function Home() {
           非 Valve 官方标准，仅供参考。数据按账号隔离，每账号 1 个游戏项目。
         </p>
         <p>
-          M1 中期范围：F1 数据接入（含 Steam Web API）+ F2 全量模板 + F5 校验层 + F6 账号体系。
+          M1 范围：F1 数据接入（含 Steam Web API）+ F2 12 模板 + F3 AI 问数 + F4 教学卡片 + F5 校验层 + F6 账号体系。
           演示数据为虚构游戏《星尘旅人》（含虚构评分快照）。
         </p>
       </footer>

@@ -12,6 +12,7 @@ out/
 /cookies*.txt
 /overview.json
 /demo_result.json
+/req.json
 
 # zwork workspace infra
 .zwork/

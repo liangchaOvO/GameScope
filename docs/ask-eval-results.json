@@ -1,5 +1,5 @@
 {
-  "evaluatedAt": "2026-10-29T18:05:10.867Z",
+  "evaluatedAt": "2026-10-30T03:07:01.897Z",
   "providerId": "mock",
   "note": "providerId=mock 为关键词规则意图（离线演示/管道回归）；接 GLM 后同脚本重跑即为真题实测",
   "total": 30,
