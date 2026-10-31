@@ -13,6 +13,7 @@ GameScope 是开源软件（AGPL-3.0），BYOK（Bring Your Own Key）：模板�
 | 现象 | 原因与解法 |
 |---|---|
 | 启动报 `NODE_MODULE_VERSION` / `better-sqlite3 was compiled against a different Node.js version` | 原生模块与当前 Node 大版本不匹配：用**与安装依赖时一致的 Node 版本**（本项目要求 Node ≥24，见 `engines`），或在项目目录执行 `npm rebuild better-sqlite3` 重新编译；Docker 用户拉取最新镜像即可 |
+| `npm install` 报 `prebuild-install ... ECONNRESET` 或 node-gyp 报 `find VS` 失败 | 预编译二进制下载被网络拦截且回退源码编译（本机无 Visual Studio C++ 工具链时必然失败）：改用国内二进制镜像——`npm config set better_sqlite3_binary_host_mirror https://npmmirror.com/mirrors/better-sqlite3` 后重装，或直接用 Docker 路径 |
 | 提问提示「缺少 API Key」 | 模板看板无需 Key；如需 AI 问数，在页面「⚙ 设置」配置任意 OpenAI 兼容端点（见下方 BYOK 表），或设置 `GAMESCOPE_GLM_API_KEY` |
 | Steam 数据拉取失败 | 需可直连 store.steampowered.com 的网络；错误路径会保留上次快照 |
 | 端口占用 | `npm run dev -- -p 3200` 或改 Docker `-p` 映射 |
